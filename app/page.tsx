@@ -1,32 +1,80 @@
-import { Button } from "@/components/ui/Button"; // Import the Button component
+import Image from "next/image";
+import { Button } from "@/components/ui/button"; // Corrected import path
+import { SearchBar } from "@/components/ui/SearchBar";
+import { MapPin } from "lucide-react"; // Import from lucide-react
+import Link from "next/link";
 
 export default function Home() {
   return (
-    // Removed the outer flex container, as the layout already handles min-height and flex column
-    <main className="container mx-auto flex flex-grow flex-col items-center justify-center p-8 text-center">
+    <>
+      {/* Hero Section with Background Image */}
+      <section className="relative w-full">
+        {/* Background Image Container */}
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <Image
+            src="/hero_bg.png"
+            alt="Family receiving a gift package in Ghana"
+            fill
+            priority
+            quality={100}
+            // Apply object-right by default (mobile), then object-center from 'md' breakpoint up
+            className="object-cover object-right md:object-center"
+            sizes="100vw"
+          />
+          {/* Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/30 to-black/10" />
+        </div>
 
-      <h2 className="text-4xl font-bold mb-4 mt-8">
-        Connecting Families, One Gift at a Time
-      </h2>
-      <p className="text-lg text-foreground/80 max-w-2xl mb-8">
-        Singlespine makes it easy for the diaspora to send thoughtful gifts back home to Ghana, especially during festive seasons and special occasions.
-      </p>
+        {/* Hero Content */}
+        <div className="container relative z-10 mx-auto flex min-h-[60vh] flex-col items-center justify-center px-4 py-16 text-center text-white sm:min-h-[70vh] md:py-20 lg:min-h-[75vh]">
+          <h1 className="mb-4 text-4xl font-bold leading-tight sm:text-5xl md:text-6xl lg:leading-snug">
+            Connecting Families, <br className="hidden sm:inline" /> One Gift at a Time
+          </h1>
+          <p className="mb-8 max-w-3xl text-base text-white/90 sm:text-lg md:text-xl">
+            Singlespine makes it easy for the diaspora to send thoughtful gifts back home to Ghana,
+            especially during festive seasons and special occasions.
+          </p>
 
-      {/* Use the Button component */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <Button size="lg" href="/gifts"> {/* Use Button with appropriate props */}
-          Browse Gifts
-        </Button>
-        <Button size="lg" variant="secondary" href="/how-it-works"> {/* Use Button with appropriate props */}
-          Learn More
-        </Button>
-      </div>
+          {/* Search Bar */}
+          <div className="mb-10 w-full max-w-2xl">
+            <SearchBar
+              placeholder="Enter their address and area to see what's nearby..."
+              variant="default"
+              size="lg"
+              containerClassName="shadow-lg bg-white/90 dark:bg-background/80 backdrop-blur-sm border border-transparent focus-within:border-primary/50"
+              className="text-foreground placeholder:text-foreground/60"
+              icon={<MapPin className="text-primary" size={20} />}
+            />
+          </div>
 
-      {/* Placeholder for future map feature hint */}
-      <p className="mt-12 text-sm text-foreground/60 font-mono">
-        Coming Soon: Map integration using GhanaPost GPS! <code className="bg-secondary px-1 rounded text-primary/80">GH-GPS</code>
-      </p>
-    </main>
-    // Removed the outer div, Footer is handled by layout.tsx
+          {/* Call to Action Buttons */}
+          <div className="flex flex-col gap-4 sm:flex-row">
+            <Button size="lg" asChild className="font-semibold">
+              <Link href="/gifts">Browse Gifts</Link>
+            </Button>
+            <Button size="lg" variant="outline" className="border-white/80 bg-black/20 text-white hover:bg-white/10 hover:border-white font-semibold" asChild>
+              <Link href="/how-it-works">Learn More</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Secondary Content Section (remains the same) */}
+      <section className="bg-background py-16">
+        <div className="container mx-auto px-4 text-center">
+          <div className="inline-block rounded-full bg-secondary/50 px-5 py-1 text-sm font-medium text-primary mb-6">
+            Coming Soon
+          </div>
+          <h2 className="mb-4 text-2xl font-bold">GhanaPost GPS Integration</h2>
+          <p className="mx-auto mb-8 max-w-2xl text-foreground/80">
+            Soon, you'll be able to send gifts to precise locations using Ghana's digital addressing system.
+            Exactly locate your loved ones and send thoughtful gifts directly to their door.
+          </p>
+          <div className="inline-flex items-center justify-center rounded-full bg-secondary px-3 py-1">
+            <code className="font-mono text-sm font-medium text-primary">GH-GPS</code>
+          </div>
+        </div>
+      </section>
+    </>
   );
 }

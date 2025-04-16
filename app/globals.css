@@ -1,53 +1,208 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+/* Keep if using class-based dark mode toggle */
 
 :root {
-    /* Singlespine Color Palette */
-    --primary: #FC8120;
-    /* Orange primary */
-    --secondary: #FFECDD;
-    /* Light peach secondary */
-    --neutral-white: #FFF8F0;
-    /* Warm white - slightly creamy tone */
-    --neutral-black: #231F20;
-    /* Rich chocolate black - softer than pure black */
+    /* Theme Configuration */
+    --radius: 0.625rem;
+    /* Example radius from previous file */
 
-    /* Default Light Theme */
-    --background: var(--neutral-white);
-    --foreground: var(--neutral-black);
+    /* Light Theme Colors (Derived from your specified hex codes) */
+    --background: oklch(98.49% 0.011 83.44);
+    /* #FFF8F0 */
+    --foreground: oklch(18.18% 0.007 317.64);
+    /* #231F20 */
+
+    --card: var(--background);
+    /* Card uses background color */
+    --card-foreground: var(--foreground);
+    /* Card text uses foreground color */
+
+    --popover: var(--background);
+    --popover-foreground: var(--foreground);
+
+    /* Singlespine Palette */
+    --primary: oklch(74.63% 0.222 41.12);
+    /* #FC8120 */
+    --primary-foreground: oklch(1 0 0);
+    /* White for contrast on orange */
+
+    --secondary: oklch(94.98% 0.039 55.49);
+    /* #FFECDD */
+    --secondary-foreground: var(--primary);
+    /* Orange text on light peach */
+
+    --accent: var(--secondary);
+    /* Accent uses secondary color */
+    --accent-foreground: var(--secondary-foreground);
+    /* Accent text uses secondary fg */
+
+    /* Standard shadcn/ui colors */
+    --muted: oklch(96.7% 0.001 286.375);
+    /* Default shadcn muted light */
+    --muted-foreground: oklch(55.2% 0.016 285.938);
+    /* Default shadcn muted-fg light */
+
+    --destructive: oklch(57.7% 0.245 27.325);
+    /* Default shadcn destructive light */
+    --destructive-foreground: oklch(98.5% 0 0);
+    /* Default shadcn destructive-fg light */
+
+    --border: oklch(18.18% 0.007 317.64 / 0.1);
+    /* Use foreground color at 10% opacity */
+    --input: oklch(18.18% 0.007 317.64 / 0.15);
+    /* Use foreground color at 15% opacity */
+    --ring: oklch(64.63% 0.222 41.12 / 0.5);
+    /* Primary color at 50% opacity for focus rings */
+
+    /* Chart colors - Using your primary/secondary and defaults */
+    --chart-1: var(--primary);
+    --chart-2: oklch(0.6 0.118 184.704);
+    --chart-3: oklch(0.398 0.07 227.392);
+    --chart-4: var(--secondary);
+    /* Using your secondary */
+    --chart-5: oklch(0.769 0.188 70.08);
+
+    /* Sidebar variables - Adjust if needed, uses main colors by default */
+    --sidebar: var(--background);
+    --sidebar-foreground: var(--foreground);
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: var(--primary-foreground);
+    --sidebar-accent: var(--accent);
+    --sidebar-accent-foreground: var(--accent-foreground);
+    --sidebar-border: var(--border);
+    --sidebar-ring: var(--ring);
 }
 
-/* @media (prefers-color-scheme: dark) { */
-/* :root { */
-/* --background: #1E1815; */
-/* Dark brown background - warmer than pure black */
-/* --foreground: #F5E6D8; */
-/* Warm off-white text - easier on the eyes */
+.dark {
+    /* Dark Theme Colors (Adjust these for optimal dark mode appearance) */
+    --background: oklch(18.18% 0.007 317.64);
+    /* Your neutral-black */
+    --foreground: oklch(98.49% 0.011 83.44);
+    /* Your neutral-white */
 
-/* Optional: You could also adjust primary/secondary for dark mode */
-/* --primary-dark: #FF9B4D; */
-/* Slightly lighter orange for dark mode */
-/* --secondary-dark: #5C3D2E; */
-/* Darker warm brown as secondary color */
-/* } */
-/* } */
+    --card: oklch(21% 0.006 285.885);
+    /* Slightly lighter than background */
+    --card-foreground: var(--foreground);
 
+    --popover: var(--card);
+    --popover-foreground: var(--foreground);
+
+    /* Singlespine Palette - Dark */
+    --primary: oklch(70% 0.23 41.12);
+    /* Lighter/Brighter Orange */
+    --primary-foreground: oklch(15% 0.01 317.64);
+    /* Dark text on lighter orange */
+
+    --secondary: oklch(30% 0.02 55.49);
+    /* Darker Peach/Brown */
+    --secondary-foreground: var(--foreground);
+    /* Light text */
+
+    --accent: var(--secondary);
+    /* Dark Accent uses dark secondary */
+    --accent-foreground: var(--secondary-foreground);
+    /* Dark Accent text */
+
+    /* Standard shadcn/ui colors - Dark */
+    --muted: oklch(27.4% 0.006 286.033);
+    /* Default shadcn muted dark */
+    --muted-foreground: oklch(70.5% 0.015 286.067);
+    /* Default shadcn muted-fg dark */
+
+    --destructive: oklch(70.4% 0.191 22.216);
+    /* Default shadcn destructive dark */
+    --destructive-foreground: oklch(15% 0.01 317.64);
+    /* Dark text for contrast */
+
+    --border: oklch(98.49% 0.011 83.44 / 0.1);
+    /* Use foreground color at 10% opacity */
+    --input: oklch(98.49% 0.011 83.44 / 0.15);
+    /* Use foreground color at 15% opacity */
+    --ring: oklch(70% 0.23 41.12 / 0.5);
+    /* Dark primary color at 50% opacity */
+
+    /* Chart colors - Dark */
+    --chart-1: var(--primary);
+    --chart-2: oklch(0.696 0.17 162.48);
+    --chart-3: oklch(0.769 0.188 70.08);
+    --chart-4: var(--secondary);
+    --chart-5: oklch(0.645 0.246 16.439);
+
+    /* Sidebar variables - Dark */
+    --sidebar: var(--background);
+    --sidebar-foreground: var(--foreground);
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: var(--primary-foreground);
+    --sidebar-accent: var(--accent);
+    --sidebar-accent-foreground: var(--accent-foreground);
+    --sidebar-border: var(--border);
+    --sidebar-ring: var(--ring);
+}
+
+
+/* --- SINGLE @theme block --- */
 @theme {
-    /* Map CSS variables to Tailwind color names */
+    /* Map ALL CSS variables to Tailwind concepts */
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+
+    /* Map Colors */
     --color-background: var(--background);
     --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
     --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
     --color-secondary: var(--secondary);
-    --color-white: var(--neutral-white);
-    --color-black: var(--neutral-black);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
 
+    /* Map Chart Colors */
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+
+    /* Map Sidebar Colors (Ensure these match the :root/dark vars) */
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+
+    /* Map Fonts */
     --font-sans: var(--font-inter), system-ui, sans-serif;
     --font-mono: var(--font-geist-mono), monospace;
 }
 
-body {
-    background: var(--color-background);
-    color: var(--color-foreground);
-    font-family: var(--font-sans);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+        font-feature-settings: "rlig" 1, "calt" 1;
+        /* Optional: common ligatures */
+    }
 }
