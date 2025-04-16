@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+:root {
+    /* Singlespine Color Palette */
+    --primary: #FC8120;
+    /* Orange primary */
+    --secondary: #FFECDD;
+    /* Light peach secondary */
+    --neutral-white: #FFF8F0;
+    /* Warm white - slightly creamy tone */
+    --neutral-black: #231F20;
+    /* Rich chocolate black - softer than pure black */
+
+    /* Default Light Theme */
+    --background: var(--neutral-white);
+    --foreground: var(--neutral-black);
+}
+
+/* @media (prefers-color-scheme: dark) { */
+/* :root { */
+/* --background: #1E1815; */
+/* Dark brown background - warmer than pure black */
+/* --foreground: #F5E6D8; */
+/* Warm off-white text - easier on the eyes */
+
+/* Optional: You could also adjust primary/secondary for dark mode */
+/* --primary-dark: #FF9B4D; */
+/* Slightly lighter orange for dark mode */
+/* --secondary-dark: #5C3D2E; */
+/* Darker warm brown as secondary color */
+/* } */
+/* } */
+
+@theme {
+    /* Map CSS variables to Tailwind color names */
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-primary: var(--primary);
+    --color-secondary: var(--secondary);
+    --color-white: var(--neutral-white);
+    --color-black: var(--neutral-black);
+
+    --font-sans: var(--font-inter), system-ui, sans-serif;
+    --font-mono: var(--font-geist-mono), monospace;
+}
+
+body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
