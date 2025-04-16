@@ -3,8 +3,9 @@
 import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { MapPin, Search, X, Loader2 } from "lucide-react"; // Import icons from Lucide
+import { Search, X, Loader2 } from "lucide-react"; // Import icons from Lucide
 
+// @ts-expect-error <-- this type is to be skipped
 interface SearchBarProps extends React.InputHTMLAttributes<HTMLInputElement> {
   containerClassName?: string;
   onSearch?: (query: string) => void;

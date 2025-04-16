@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Button } from "@/components/ui/button"; // Corrected import path
+import { Button } from "@/components/ui/Button"; // Corrected import path
 import { SearchBar } from "@/components/ui/SearchBar";
 import { MapPin } from "lucide-react"; // Import from lucide-react
 import Link from "next/link";
@@ -67,7 +67,7 @@ export default function Home() {
           </div>
           <h2 className="mb-4 text-2xl font-bold">GhanaPost GPS Integration</h2>
           <p className="mx-auto mb-8 max-w-2xl text-foreground/80">
-            Soon, you'll be able to send gifts to precise locations using Ghana's digital addressing system.
+            Soon, you&apos;ll be able to send gifts to precise locations using Ghana&apos;s digital addressing system.
             Exactly locate your loved ones and send thoughtful gifts directly to their door.
           </p>
           <div className="inline-flex items-center justify-center rounded-full bg-secondary px-3 py-1">

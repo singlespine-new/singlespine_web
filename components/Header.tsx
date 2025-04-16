@@ -4,7 +4,7 @@ import * as React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation'; // Import usePathname hook
-import { Button } from '@/components/ui/button'; // Corrected import path
+import { Button } from '@/components/ui/Button'; // Corrected import path
 import {
   Sheet,
   SheetClose,
