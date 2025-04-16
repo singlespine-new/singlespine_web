@@ -29,54 +29,66 @@ const buttonVariants = cva(
   }
 );
 
-// Combine potential attributes for both button and anchor for the props interface
-// This isn't perfectly type-safe but resolves the immediate conflict for spreading.
-// A more robust solution involves conditional types or component composition patterns.
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-  React.AnchorHTMLAttributes<HTMLAnchorElement>, // Add Anchor attributes
-  VariantProps<typeof buttonVariants> {
+  extends VariantProps<typeof buttonVariants> {
+  className?: string;
   asChild?: boolean;
-  href?: string; // href is already part of AnchorHTMLAttributes
+  href?: string;
+  children?: React.ReactNode;
+  target?: string;
+  rel?: string;
+  onClick?: React.MouseEventHandler;
+  [key: string]: any; // Allow other props to pass through
 }
 
-// Adjust the ref type to be more general or use 'any' for now
 const Button = React.forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, href, ...props }, ref) => {
-    // Determine the component type
-    const isLink = typeof href === 'string';
-    const Comp = asChild ? Slot : isLink ? "a" : "button";
-
-    // Prepare common props
-    const commonProps = {
-      className: cn(buttonVariants({ variant, size, className })),
-      ref: ref, // Pass the ref directly
-      ...props, // Spread remaining props (now includes anchor/button attributes)
-    };
+  ({ className, variant, size, asChild = false, href, target, rel, onClick, ...props }, ref) => {
+    const baseClassName = cn(buttonVariants({ variant, size, className }));
 
     if (asChild) {
-      return <Slot {...commonProps} />;
+      return <Slot className={baseClassName} {...props} />;
     }
 
-    if (isLink) {
-      // If it's an internal link, wrap with NextLink
+    if (href) {
+      // Handle links
       if (href.startsWith('/')) {
-        // Important: When using legacyBehavior with an 'a' tag inside,
-        // pass props like className, ref, etc., to the 'a' tag, not the Link itself.
+        // Internal link
         return (
-          <Link href={href} passHref legacyBehavior>
-            <a {...commonProps} />
+          <Link
+            href={href}
+            className={baseClassName}
+            onClick={onClick}
+            {...props}
+          >
+            {props.children}
           </Link>
         );
       } else {
-        // External link, render a simple 'a' tag
-        return <a href={href} {...commonProps} />;
+        // External link - set default values, but allow overrides from props
+        return (
+          <a
+            href={href}
+            className={baseClassName}
+            target={target || "_blank"}
+            rel={rel || "noopener noreferrer"}
+            onClick={onClick}
+            {...props}
+          >
+            {props.children}
+          </a>
+        );
       }
     }
 
     // It's a button
-    // Cast props specifically to ButtonHTMLAttributes if needed, though spreading might work now
-    return <button {...commonProps as React.ButtonHTMLAttributes<HTMLButtonElement>} />;
+    return (
+      <button
+        className={baseClassName}
+        ref={ref as React.Ref<HTMLButtonElement>}
+        type={props.type || "button"} // Default to 'button' type to avoid form submission
+        {...props}
+      />
+    );
   }
 );
 Button.displayName = "Button";
