@@ -4,10 +4,10 @@ import { NextRequest, NextResponse } from 'next/server'
 // GET /api/products/[slug] - Fetch single product by slug
 export async function GET(
   request: NextRequest,
-  context: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { slug } = context.params
+    const { slug } = await params
 
     if (!slug) {
       return NextResponse.json(
@@ -78,7 +78,7 @@ export async function GET(
 // PUT /api/products/[slug] - Update product (Admin only)
 export async function PUT(
   request: NextRequest,
-  context: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     // Check authentication and admin role
@@ -92,7 +92,7 @@ export async function PUT(
       )
     }
 
-    const { slug } = context.params
+    const { slug } = await params
     const body = await request.json()
 
     // Check if product exists
@@ -175,7 +175,7 @@ export async function PUT(
 // DELETE /api/products/[slug] - Delete product (Admin only)
 export async function DELETE(
   request: NextRequest,
-  context: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     // Check authentication and admin role
@@ -189,7 +189,7 @@ export async function DELETE(
       )
     }
 
-    const { slug } = context.params
+    const { slug } = await params
 
     // Check if product exists
     const existingProduct = await prisma.product.findUnique({
