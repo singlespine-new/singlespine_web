@@ -5,8 +5,8 @@ import Link from 'next/link'
 import {
   MapPin,
   ArrowRight,
-  Package,
-  CheckCircle,
+  // Package,
+  // CheckCircle,
   Shield,
   Truck,
   Heart,
@@ -15,7 +15,6 @@ import {
   Gift,
   Users,
   Smile,
-  Plus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { SearchBar } from '@/components/ui/SearchBar'
@@ -89,32 +88,32 @@ const FEATURES = [
   },
 ]
 
-const FAQS = [
-  {
-    question: 'How do I know my order has been received?',
-    answer:
-      "Once you complete your purchase, you'll receive a confirmation email with your order details and a unique order number. You can use this number to track your package.",
-  },
-  {
-    question: 'What are the delivery charges?',
-    answer:
-      'Delivery charges vary based on the location and the size of your order. You can see the final delivery fee at checkout before you confirm your payment.',
-  },
-  {
-    question: 'How long does delivery take?',
-    answer:
-      'Delivery times typically range from 1-3 business days within major cities like Accra and Kumasi, and may take longer for more remote areas. We aim to deliver as quickly as possible!',
-  },
-  {
-    question: 'Can I send a personalized message with my gift?',
-    answer:
-      'Absolutely! During the checkout process, you will have an option to add a personalized message, which we will include with your delivery.',
-  },
-]
+// const FAQS = [
+//   {
+//     question: 'How do I know my order has been received?',
+//     answer:
+//       "Once you complete your purchase, you'll receive a confirmation email with your order details and a unique order number. You can use this number to track your package.",
+//   },
+//   {
+//     question: 'What are the delivery charges?',
+//     answer:
+//       'Delivery charges vary based on the location and the size of your order. You can see the final delivery fee at checkout before you confirm your payment.',
+//   },
+//   {
+//     question: 'How long does delivery take?',
+//     answer:
+//       'Delivery times typically range from 1-3 business days within major cities like Accra and Kumasi, and may take longer for more remote areas. We aim to deliver as quickly as possible!',
+//   },
+//   {
+//     question: 'Can I send a personalized message with my gift?',
+//     answer:
+//       'Absolutely! During the checkout process, you will have an option to add a personalized message, which we will include with your delivery.',
+//   },
+// ]
 
 export default function HowItWorksPage() {
   const [activeStep, setActiveStep] = useState(1)
-  const [expandedFaq, setExpandedFaq] = useState<number | null>(null)
+  // const [expandedFaq, setExpandedFaq] = useState<number | null>(null)
 
   return (
     <div className="min-h-screen bg-background">

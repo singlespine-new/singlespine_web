@@ -150,7 +150,7 @@ export const verifyOTP = (phoneNumber: string, providedOTP: string): { valid: bo
     otpStore.delete(formattedNumber)
     return { valid: true, message: 'OTP verified successfully!' }
   } catch (error) {
-    return { valid: false, message: 'Invalid phone number format.' }
+    return { valid: false, message: `Invalid phone number format.${error}` }
   }
 }
 

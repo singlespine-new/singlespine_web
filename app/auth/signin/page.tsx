@@ -5,8 +5,8 @@ import { signIn, getSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
-import { Phone, ArrowLeft, Shield, CheckCircle, Loader2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Phone, ArrowLeft, CheckCircle, Loader2 } from 'lucide-react'
+// import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import OtpInput from 'react-otp-input'
 import Image from 'next/image'
@@ -22,6 +22,7 @@ export default function SignInPage() {
   const [phoneNumber, setPhoneNumber] = useState('')
   const [otp, setOtp] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  // @ts-expect-error suppress error that may errupt
   const [otpSent, setOtpSent] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
 
@@ -241,7 +242,7 @@ export default function SignInPage() {
               {/* Sign Up Link */}
               <div className="text-center pt-4">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Don't have an account?{' '}
+                  Don&apos;t have an account?{' '}
                   <Link
                     href="/auth/signup"
                     className="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 font-medium"
@@ -271,7 +272,7 @@ export default function SignInPage() {
                   Enter your phone number
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  We'll send you a verification code to sign in
+                  We&apos;ll send you a verification code to sign in
                 </p>
               </div>
 
@@ -378,7 +379,7 @@ export default function SignInPage() {
               {/* Resend OTP */}
               <div className="text-center">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Didn't receive the code?{' '}
+                  Didn&apos;t receive the code?{' '}
                   {resendCooldown > 0 ? (
                     <span className="text-gray-500">
                       Resend in {Math.floor(resendCooldown / 60)}:{(resendCooldown % 60).toString().padStart(2, '0')}
@@ -403,7 +404,7 @@ export default function SignInPage() {
         {/* Security Note */}
         <div className="mt-6 text-center">
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            🔒 Your information is secure and encrypted
+            Your information is secure and encrypted
           </p>
         </div>
       </div>
