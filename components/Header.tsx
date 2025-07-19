@@ -13,22 +13,25 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"; // Corrected import path
-import { Menu } from 'lucide-react';
+import { Menu, ShoppingBag, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils'; // Import cn utility
+import { useCartStore } from '@/lib/store/cart';
 
 const Header = () => {
   const [isOpen, setIsOpen] = React.useState(false);
   const pathname = usePathname(); // Get current pathname
+  const { openCart, getTotalItems } = useCartStore();
+  const cartItemsCount = getTotalItems();
 
   const navLinks = [
-    { label: 'Home', href: '/' },
+    { label: 'Home', href: '/home' },
     { label: 'Gifts', href: '/gifts' },
     { label: 'How it Works', href: '/how-it-works' },
     // { label: 'About Us', href: '/about' },
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
       <nav className="container mx-auto flex h-16 items-center justify-between gap-4 px-4 md:px-6">
         {/* Logo */}
         <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="Singlespine Home">
@@ -61,6 +64,26 @@ const Header = () => {
 
         {/* Desktop Action Buttons */}
         <div className="hidden shrink-0 items-center gap-2 sm:gap-3 md:flex">
+          {/* Wishlist Button */}
+          <Button variant="ghost" size="icon" className="relative">
+            <Heart className="h-5 w-5" />
+          </Button>
+
+          {/* Cart Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative"
+            onClick={openCart}
+          >
+            <ShoppingBag className="h-5 w-5" />
+            {cartItemsCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                {cartItemsCount > 99 ? '99+' : cartItemsCount}
+              </span>
+            )}
+          </Button>
+
           <Button variant="secondary" size="sm" asChild className='font-semibold'>
             <Link href="/auth/signin">Sign In</Link>
           </Button>
@@ -120,6 +143,23 @@ const Header = () => {
 
               {/* Mobile Action Buttons - Pushed to bottom */}
               <div className="mt-auto flex flex-col space-y-3 border-t border-border/20 pt-6"> {/* Added border-t */}
+                {/* Mobile Cart & Wishlist */}
+                <div className="flex gap-3 mb-3">
+                  <Button variant="outline" size="sm" className="flex-1 relative" onClick={openCart}>
+                    <ShoppingBag className="h-4 w-4 mr-2" />
+                    Cart
+                    {cartItemsCount > 0 && (
+                      <span className="ml-2 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                        {cartItemsCount > 99 ? '99+' : cartItemsCount}
+                      </span>
+                    )}
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1">
+                    <Heart className="h-4 w-4 mr-2" />
+                    Wishlist
+                  </Button>
+                </div>
+
                 <Button variant="secondary" asChild className='w-full font-semibold' onClick={() => setIsOpen(false)}>
                   <Link href="/auth/signin">Sign In</Link>
                 </Button>

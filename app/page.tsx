@@ -22,17 +22,16 @@ export default function Home() {
             sizes="100vw"
           />
           {/* Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/30 to-black/10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-black/5" />
         </div>
 
         {/* Hero Content */}
         <div className="container relative z-10 mx-auto flex min-h-[60vh] flex-col items-center justify-center px-4 py-16 text-center text-white sm:min-h-[70vh] md:py-20 lg:min-h-[75vh]">
           <h1 className="mb-4 text-4xl font-bold leading-tight sm:text-5xl md:text-6xl lg:leading-snug">
-            Connecting Families, <br className="hidden sm:inline" /> One Gift at a Time
+            One Spine, One Love
           </h1>
-          <p className="mb-8 max-w-3xl text-base text-white/90 sm:text-lg md:text-xl">
-            Singlespine makes it easy for the diaspora to send thoughtful gifts back home to Ghana,
-            especially during festive seasons and special occasions.
+          <p className="mb-8 max-w-3xl text-xl text-white/90 sm:text-2xl md:text-4xl">
+            Stay connected, place an order for loved ones back home today!
           </p>
 
           {/* Search Bar */}
@@ -60,7 +59,7 @@ export default function Home() {
       </section>
 
       {/* Secondary Content Section (remains the same) */}
-      <section className="bg-background py-16">
+      {/* <section className="bg-background py-16">
         <div className="container mx-auto px-4 text-center">
           <div className="inline-block rounded-full bg-secondary/50 px-5 py-1 text-sm font-medium text-primary mb-6">
             Coming Soon
@@ -74,7 +73,7 @@ export default function Home() {
             <code className="font-mono text-sm font-medium text-primary">GH-GPS</code>
           </div>
         </div>
-      </section>
+      </section> */}
     </>
   );
 }

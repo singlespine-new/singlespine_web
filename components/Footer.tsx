@@ -15,10 +15,8 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   const footerLinks: FooterLink[] = [
-    { label: 'Privacy Policy', href: '/privacy' },
     { label: 'Terms of Service', href: '/terms' },
-    { label: 'Contact Us', href: '/contact' },
-    { label: 'How it Works', href: '/how-it-works' },
+    { label: 'Privacy', href: '/privacy' },
   ];
 
   const socialLinks: SocialLink[] = [
@@ -28,8 +26,8 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="border-t border-border/20 bg-background"> {/* Lighter border */}
-      <div className="container mx-auto px-4 py-8 md:px-6 md:py-12">
+    <footer className="border-t border-border/20 bg-white"> {/* Lighter border */}
+      <div className="container mx-auto px-4 py-2 md:px-6 md:py-12">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-12 lg:gap-12">
           {/* Column 1: Logo & Description (Larger on wider screens) */}
           <div className="md:col-span-4 lg:col-span-5">
@@ -37,32 +35,16 @@ const Footer = () => {
               <span className="text-2xl font-bold text-primary">Singlespine</span>
             </Link>
             <p className="text-sm text-foreground/70">
-              Bridging the gap between diaspora and their families through thoughtful gifting.
+              © {currentYear} Singlespine Technology Inc.
             </p>
           </div>
 
           {/* Column 2: Quick Links */}
-          <div className="md:col-span-4 lg:col-span-3">
-            <h4 className="mb-4 font-semibold text-foreground">Quick Links</h4>
-            <ul className="space-y-2">
-              <li>
-                <Link href="/gifts" className="text-sm text-foreground/70 transition-colors hover:text-primary">
-                  Browse Gifts
-                </Link>
-              </li>
-              {footerLinks.map((link) => (
-                <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-foreground/70 transition-colors hover:text-primary">
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+
 
           {/* Column 3: Connect */}
           <div className="md:col-span-4 lg:col-span-4">
-            <h4 className="mb-4 font-semibold text-foreground">Connect With Us</h4>
+            {/* <h4 className="mb-4 font-semibold text-foreground">Connect With Us</h4> */}
             {/* Contact Info (Optional) */}
             {/* <p className="mb-4 text-sm text-foreground/70">support@singlespine.com</p> */}
 
@@ -86,12 +68,25 @@ const Footer = () => {
               </div>
             )}
           </div>
+
+          <div className="md:col-span-4 lg:col-span-3">
+            {/* <h4 className="mb-4 font-semibold text-foreground">Quick Links</h4> */}
+            <ul className="space-y-2 flex gap-4">
+              {footerLinks.map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href} className="text-sm text-foreground/70 transition-colors hover:text-primary">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         {/* Bottom Bar: Copyright */}
-        <div className="mt-8 border-t border-border/20 pt-6 text-center text-xs text-foreground/60 md:mt-12 md:pt-8">
+        {/* <div className="mt-8 border-t border-border/20 pt-6 text-center text-xs text-foreground/60 md:mt-12 md:pt-8">
           © {currentYear} Singlespine. All rights reserved.
-        </div>
+        </div> */}
       </div>
     </footer>
   );
