@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Search, Filter, Grid, List, Package } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { SearchBar } from '@/components/ui/SearchBar'
@@ -26,7 +26,13 @@ interface Product {
   origin?: string
   vendor?: string
   availability: string
-  variants?: any[]
+  variants?: {
+    id: string;
+    name: string;
+    value: string;
+    price?: number;
+    stock?: number;
+  }[]
 }
 
 interface ProductsResponse {
@@ -99,7 +105,7 @@ export default function ProductsPage() {
   const [totalCount, setTotalCount] = useState(0)
 
   // Fetch products
-  const fetchProducts = async (page = 1) => {
+  const fetchProducts = useCallback(async (page = 1) => {
     setLoading(true)
     setError(null)
 
@@ -142,13 +148,13 @@ export default function ProductsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [searchQuery, category, sortBy, minPrice, maxPrice, origin, featured, inStock]);
 
   // Initial load and when filters change
   useEffect(() => {
     fetchProducts(1)
     setCurrentPage(1)
-  }, [searchQuery, category, sortBy, minPrice, maxPrice, origin, featured, inStock])
+  }, [fetchProducts])
 
   // Handle page change
   const handlePageChange = (page: number) => {

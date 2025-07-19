@@ -122,7 +122,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id || token.sub!
-        session.user.role = token.role as any
+        session.user.role = token.role as string
         session.user.phoneNumber = token.phoneNumber as string
       }
       return session
@@ -141,7 +141,7 @@ export async function getCurrentUser() {
     const { getServerSession } = await import('next-auth/next')
     const session = await getServerSession(authOptions)
     return session?.user
-  } catch (error) {
+  } catch (_) {
     return null
   }
 }

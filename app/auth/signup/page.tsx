@@ -28,8 +28,8 @@ export default function SignUpPage() {
   const [otp, setOtp] = useState('')
   const [userDetails, setUserDetails] = useState<UserDetails>({ name: '', email: '' })
   const [isLoading, setIsLoading] = useState(false)
-  // @ts-expect-error this is to escape the error
-  const [otpSent, setOtpSent] = useState(false)
+  // We use setOtpSent but can remove otpSent since it's not directly used
+  const [, setOtpSent] = useState(false)
   const [otpVerified, setOtpVerified] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
 

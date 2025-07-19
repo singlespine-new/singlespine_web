@@ -48,7 +48,8 @@ export default function ProductCard({ product, className, showQuickAdd = true }:
   const [isLoading, setIsLoading] = useState(false)
 
   const addItem = useCartStore(state => state.addItem)
-  const openCart = useCartStore(state => state.openCart)
+  // We don't need to open cart automatically after adding to cart
+  // const openCart = useCartStore(state => state.openCart)
 
   const discount = product.comparePrice
     ? Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)
@@ -87,7 +88,8 @@ export default function ProductCard({ product, className, showQuickAdd = true }:
           color: 'white',
         },
       })
-    } catch (error) {
+    } catch (err) {
+      console.error(err);
       toast.error('Failed to add item to cart')
     } finally {
       setIsLoading(false)

@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
 
 // GET /api/products - Fetch products with filtering and pagination
@@ -18,14 +19,14 @@ export async function GET(request: NextRequest) {
     const sortOrder = searchParams.get('sortOrder') || 'desc'
     const origin = searchParams.get('origin')
     const vendor = searchParams.get('vendor')
-    const availability = searchParams.get('availability')
+    const availability = searchParams.get('availability') as Prisma.ProductAvailability | undefined
 
     // Calculate offset
     const offset = (page - 1) * limit
 
     // Build where clause
-    const where: any = {
-      isActive: true
+    const where: Prisma.ProductWhereInput = {
+      isActive: true,
     }
 
     if (category) {
@@ -37,20 +38,20 @@ export async function GET(request: NextRequest) {
         {
           name: {
             contains: search,
-            mode: 'insensitive'
-          }
+            mode: 'insensitive',
+          },
         },
         {
           description: {
             contains: search,
-            mode: 'insensitive'
-          }
+            mode: 'insensitive',
+          },
         },
         {
           tags: {
-            has: search
-          }
-        }
+            has: search,
+          },
+        },
       ]
     }
 
@@ -77,13 +78,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Build orderBy clause
-    const orderBy: any = {}
+    const orderBy: Prisma.ProductOrderByWithRelationInput = {}
     if (sortBy === 'price') {
-      orderBy.price = sortOrder
+      orderBy.price = sortOrder as Prisma.SortOrder
     } else if (sortBy === 'name') {
-      orderBy.name = sortOrder
+      orderBy.name = sortOrder as Prisma.SortOrder
     } else {
-      orderBy.createdAt = sortOrder
+      orderBy.createdAt = sortOrder as Prisma.SortOrder
     }
 
     // Fetch products
@@ -101,12 +102,12 @@ export async function GET(request: NextRequest) {
               name: true,
               value: true,
               price: true,
-              stock: true
-            }
-          }
-        }
+              stock: true,
+            },
+          },
+        },
       }),
-      prisma.product.count({ where })
+      prisma.product.count({ where }),
     ])
 
     // Calculate pagination info
@@ -124,21 +125,28 @@ export async function GET(request: NextRequest) {
           totalCount,
           hasNextPage,
           hasPreviousPage,
-          limit
-        }
-      }
+          limit,
+        },
+      },
     })
-
   } catch (error) {
     console.error('Error fetching products:', error)
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to fetch products'
+        error: 'Failed to fetch products',
       },
       { status: 500 }
     )
   }
+}
+
+interface VariantInput {
+  name: string
+  value: string
+  price?: string | number
+  stock?: string | number
+  sku?: string
 }
 
 // POST /api/products - Create new product (Admin only)
@@ -174,7 +182,7 @@ export async function POST(request: NextRequest) {
       origin = 'Ghana',
       vendor,
       availability = 'IN_STOCK',
-      variants
+      variants,
     } = body
 
     // Validate required fields
@@ -187,7 +195,7 @@ export async function POST(request: NextRequest) {
 
     // Check if slug already exists
     const existingProduct = await prisma.product.findUnique({
-      where: { slug }
+      where: { slug },
     })
 
     if (existingProduct) {
@@ -217,32 +225,33 @@ export async function POST(request: NextRequest) {
         origin,
         vendor,
         availability,
-        variants: variants ? {
-          create: variants.map((variant: any) => ({
-            name: variant.name,
-            value: variant.value,
-            price: variant.price ? parseFloat(variant.price) : null,
-            stock: variant.stock ? parseInt(variant.stock) : 0,
-            sku: variant.sku
-          }))
-        } : undefined
+        variants: variants
+          ? {
+            create: variants.map((variant: VariantInput) => ({
+              name: variant.name,
+              value: variant.value,
+              price: variant.price ? parseFloat(String(variant.price)) : null,
+              stock: variant.stock ? parseInt(String(variant.stock)) : 0,
+              sku: variant.sku,
+            })),
+          }
+          : undefined,
       },
       include: {
-        variants: true
-      }
+        variants: true,
+      },
     })
 
     return NextResponse.json({
       success: true,
-      data: product
+      data: product,
     })
-
   } catch (error) {
     console.error('Error creating product:', error)
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to create product'
+        error: 'Failed to create product',
       },
       { status: 500 }
     )

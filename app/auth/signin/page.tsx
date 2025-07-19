@@ -22,8 +22,8 @@ export default function SignInPage() {
   const [phoneNumber, setPhoneNumber] = useState('')
   const [otp, setOtp] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  // @ts-expect-error suppress error that may errupt
-  const [otpSent, setOtpSent] = useState(false)
+  // We use setOtpSent but can remove otpSent since it's not directly used
+  const [, setOtpSent] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
 
   // Check if user is already authenticated
