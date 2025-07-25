@@ -1,104 +1,96 @@
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { getServerSession } from 'next-auth/next'
+import { getMockProductById } from '@/data/mockData'
 import { NextRequest, NextResponse } from 'next/server'
+
+// Mock cart storage (in a real app, this would be in a database or session storage)
+const mockCart: {
+  id: string
+  userId: string
+  items: Array<{
+    id: string
+    productId: string
+    variantId?: string
+    quantity: number
+    addedAt: string
+  }>
+} = {
+  id: 'mock-cart-1',
+  userId: 'mock-user-1',
+  items: []
+}
 
 // GET /api/cart - Get user's cart items
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
+    // In a real app, you would get the user session here
+    // const session = await getServerSession(authOptions)
+    // if (!session?.user?.id) {
+    //   return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    // }
 
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    const cartItemsWithProducts = mockCart.items.map(item => {
+      const product = getMockProductById(item.productId)
+      const variant = product?.variants?.find(v => v.id === item.variantId)
 
-    const cartItems = await prisma.cartItem.findMany({
-      where: {
-        userId: session.user.id
-      },
-      include: {
-        product: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            price: true,
-            images: true,
-            stock: true,
-            availability: true,
-            weight: true,
-            origin: true,
-            vendor: true
-          }
+      if (!product) {
+        return null
+      }
+
+      const effectivePrice = variant?.price || product.price
+      const maxQuantity = variant?.stock || product.stock
+
+      return {
+        id: item.id,
+        productId: item.productId,
+        variantId: item.variantId,
+        name: product.name,
+        price: effectivePrice,
+        quantity: item.quantity,
+        maxQuantity,
+        image: product.images[0] || '/placeholder-product.jpg',
+        variant: variant ? {
+          id: variant.id,
+          name: variant.name,
+          value: variant.value
+        } : undefined,
+        metadata: {
+          weight: product.weight,
+          origin: product.origin,
+          vendor: product.vendor,
+          shopId: product.shopId
         },
-        variant: {
-          select: {
-            id: true,
-            name: true,
-            value: true,
-            price: true,
-            stock: true
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
+        addedAt: item.addedAt
       }
-    })
+    }).filter(Boolean)
 
-    // Transform cart items for frontend
-    const transformedItems = cartItems.map(item => ({
-      id: `${item.productId}-${item.variantId || 'default'}`,
-      productId: item.productId,
-      variantId: item.variantId,
-      name: item.product.name,
-      price: item.variant?.price || item.product.price,
-      image: item.product.images[0] || '/placeholder-product.jpg',
-      quantity: item.quantity,
-      maxQuantity: item.variant?.stock || item.product.stock,
-      variant: item.variant ? {
-        id: item.variant.id,
-        name: item.variant.name,
-        value: item.variant.value
-      } : undefined,
-      metadata: {
-        weight: item.product.weight,
-        origin: item.product.origin,
-        vendor: item.product.vendor
-      }
-    }))
-
-    // Calculate totals
-    const subtotal = transformedItems.reduce((total, item) =>
-      total + (item.price * item.quantity), 0
-    )
-
-    const totalWeight = transformedItems.reduce((total, item) => {
-      const weight = item.metadata.weight || 0.5
-      return total + (weight * item.quantity)
+    // Calculate cart summary
+    const subtotal = cartItemsWithProducts.reduce((sum, item) => {
+      return sum + (item!.price * item!.quantity)
     }, 0)
 
-    // Calculate shipping cost
-    const shippingCost = subtotal >= 500 ? 0 :
-      totalWeight <= 2 ? 15 : 15 + (Math.ceil(totalWeight - 2) * 5)
+    const shippingCost = subtotal > 100 ? 0 : 10 // Free shipping over ₵100
+    const tax = subtotal * 0.125 // 12.5% VAT
+    const total = subtotal + shippingCost + tax
+    const totalItems = cartItemsWithProducts.reduce((sum, item) => sum + item!.quantity, 0)
+    const totalWeight = cartItemsWithProducts.reduce((sum, item) => {
+      return sum + ((item!.metadata?.weight || 0) * item!.quantity)
+    }, 0)
+
+    const cartSummary = {
+      subtotal,
+      shippingCost,
+      tax,
+      total,
+      totalItems,
+      totalWeight
+    }
 
     return NextResponse.json({
       success: true,
       data: {
-        items: transformedItems,
-        summary: {
-          subtotal,
-          shippingCost,
-          total: subtotal + shippingCost,
-          totalItems: transformedItems.reduce((total, item) => total + item.quantity, 0),
-          totalWeight
-        }
+        items: cartItemsWithProducts,
+        summary: cartSummary
       }
     })
-
   } catch (error) {
     console.error('Error fetching cart:', error)
     return NextResponse.json(
@@ -111,14 +103,11 @@ export async function GET() {
 // POST /api/cart - Add item to cart
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    // In a real app, you would get the user session here
+    // const session = await getServerSession(authOptions)
+    // if (!session?.user?.id) {
+    //   return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    // }
 
     const body = await request.json()
     const { productId, variantId, quantity = 1 } = body
@@ -130,16 +119,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify product exists and is available
-    const product = await prisma.product.findUnique({
-      where: { id: productId, isActive: true },
-      include: {
-        variants: variantId ? {
-          where: { id: variantId, isActive: true }
-        } : false
-      }
-    })
-
+    // Validate product exists
+    const product = getMockProductById(productId)
     if (!product) {
       return NextResponse.json(
         { success: false, error: 'Product not found' },
@@ -147,10 +128,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check stock availability
-    const variant = variantId ? product.variants?.[0] : null
-    const availableStock = variant?.stock || product.stock
+    // Validate variant if provided
+    let variant = null
+    if (variantId) {
+      variant = product.variants?.find(v => v.id === variantId)
+      if (!variant) {
+        return NextResponse.json(
+          { success: false, error: 'Product variant not found' },
+          { status: 404 }
+        )
+      }
+    }
 
+    // Check stock availability
+    const availableStock = variant?.stock || product.stock
     if (availableStock < quantity) {
       return NextResponse.json(
         { success: false, error: 'Insufficient stock' },
@@ -159,18 +150,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if item already exists in cart
-    const existingCartItem = await prisma.cartItem.findFirst({
-      where: {
-        userId: session.user.id,
-        productId,
-        variantId: variantId || null
-      }
-    })
+    const existingItemIndex = mockCart.items.findIndex(item =>
+      item.productId === productId && item.variantId === variantId
+    )
 
-    let cartItem
-
-    if (existingCartItem) {
-      const newQuantity = existingCartItem.quantity + quantity
+    if (existingItemIndex >= 0) {
+      // Update existing item quantity
+      const existingItem = mockCart.items[existingItemIndex]
+      const newQuantity = existingItem.quantity + quantity
 
       if (newQuantity > availableStock) {
         return NextResponse.json(
@@ -179,62 +166,24 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      cartItem = await prisma.cartItem.update({
-        where: { id: existingCartItem.id },
-        data: {
-          quantity: newQuantity,
-          updatedAt: new Date()
-        },
-        include: {
-          product: {
-            select: {
-              name: true,
-              images: true,
-              price: true
-            }
-          },
-          variant: {
-            select: {
-              name: true,
-              value: true,
-              price: true
-            }
-          }
-        }
-      })
+      mockCart.items[existingItemIndex].quantity = newQuantity
     } else {
-      cartItem = await prisma.cartItem.create({
-        data: {
-          userId: session.user.id,
-          productId,
-          variantId: variantId || null,
-          quantity
-        },
-        include: {
-          product: {
-            select: {
-              name: true,
-              images: true,
-              price: true
-            }
-          },
-          variant: {
-            select: {
-              name: true,
-              value: true,
-              price: true
-            }
-          }
-        }
-      })
+      // Add new item to cart
+      const newItem = {
+        id: `cart-item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        productId,
+        variantId,
+        quantity,
+        addedAt: new Date().toISOString()
+      }
+
+      mockCart.items.push(newItem)
     }
 
     return NextResponse.json({
       success: true,
-      message: `${cartItem.product.name} added to cart successfully! 🎁`,
-      data: cartItem
+      message: 'Item added to cart successfully'
     })
-
   } catch (error) {
     console.error('Error adding to cart:', error)
     return NextResponse.json(
@@ -247,106 +196,55 @@ export async function POST(request: NextRequest) {
 // PUT /api/cart - Update cart item quantity
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
     const body = await request.json()
-    const { productId, variantId, quantity } = body
+    const { itemId, quantity } = body
 
-    if (!productId || quantity === undefined) {
+    if (!itemId || quantity < 0) {
       return NextResponse.json(
-        { success: false, error: 'Product ID and quantity are required' },
+        { success: false, error: 'Invalid parameters' },
         { status: 400 }
       )
     }
 
-    if (quantity < 0) {
-      return NextResponse.json(
-        { success: false, error: 'Quantity must be non-negative' },
-        { status: 400 }
-      )
-    }
-
-    // Find cart item
-    const cartItem = await prisma.cartItem.findFirst({
-      where: {
-        userId: session.user.id,
-        productId,
-        variantId: variantId || null
-      },
-      include: {
-        product: { select: { stock: true, name: true } },
-        variant: { select: { stock: true } }
-      }
-    })
-
-    if (!cartItem) {
+    const itemIndex = mockCart.items.findIndex(item => item.id === itemId)
+    if (itemIndex === -1) {
       return NextResponse.json(
         { success: false, error: 'Cart item not found' },
         { status: 404 }
       )
     }
 
-    // If quantity is 0, remove the item
-    if (quantity === 0) {
-      await prisma.cartItem.delete({
-        where: { id: cartItem.id }
-      })
-
-      return NextResponse.json({
-        success: true,
-        message: `${cartItem.product.name} removed from cart`,
-        data: null
-      })
+    const item = mockCart.items[itemIndex]
+    const product = getMockProductById(item.productId)
+    if (!product) {
+      return NextResponse.json(
+        { success: false, error: 'Product not found' },
+        { status: 404 }
+      )
     }
 
-    // Check stock availability
-    const availableStock = cartItem.variant?.stock || cartItem.product.stock
+    const variant = product.variants?.find(v => v.id === item.variantId)
+    const availableStock = variant?.stock || product.stock
 
     if (quantity > availableStock) {
       return NextResponse.json(
-        { success: false, error: `Only ${availableStock} items available` },
+        { success: false, error: 'Insufficient stock' },
         { status: 400 }
       )
     }
 
-    // Update quantity
-    const updatedCartItem = await prisma.cartItem.update({
-      where: { id: cartItem.id },
-      data: {
-        quantity,
-        updatedAt: new Date()
-      },
-      include: {
-        product: {
-          select: {
-            name: true,
-            images: true,
-            price: true
-          }
-        },
-        variant: {
-          select: {
-            name: true,
-            value: true,
-            price: true
-          }
-        }
-      }
-    })
+    if (quantity === 0) {
+      // Remove item from cart
+      mockCart.items.splice(itemIndex, 1)
+    } else {
+      // Update quantity
+      mockCart.items[itemIndex].quantity = quantity
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Cart updated successfully',
-      data: updatedCartItem
+      message: 'Cart updated successfully'
     })
-
   } catch (error) {
     console.error('Error updating cart:', error)
     return NextResponse.json(
@@ -356,61 +254,39 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// DELETE /api/cart - Clear entire cart or remove specific item
+// DELETE /api/cart - Remove item from cart or clear entire cart
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
     const { searchParams } = new URL(request.url)
-    const productId = searchParams.get('productId')
-    const variantId = searchParams.get('variantId')
+    const itemId = searchParams.get('itemId')
 
-    if (productId) {
+    if (itemId) {
       // Remove specific item
-      const deleted = await prisma.cartItem.deleteMany({
-        where: {
-          userId: session.user.id,
-          productId,
-          variantId: variantId || null
-        }
-      })
-
-      if (deleted.count === 0) {
+      const itemIndex = mockCart.items.findIndex(item => item.id === itemId)
+      if (itemIndex === -1) {
         return NextResponse.json(
           { success: false, error: 'Cart item not found' },
           { status: 404 }
         )
       }
 
+      mockCart.items.splice(itemIndex, 1)
       return NextResponse.json({
         success: true,
-        message: 'Item removed from cart successfully'
+        message: 'Item removed from cart'
       })
     } else {
       // Clear entire cart
-      await prisma.cartItem.deleteMany({
-        where: {
-          userId: session.user.id
-        }
-      })
-
+      mockCart.items = []
       return NextResponse.json({
         success: true,
-        message: 'Cart cleared successfully! 🧹'
+        message: 'Cart cleared'
       })
     }
-
   } catch (error) {
-    console.error('Error clearing cart:', error)
+    console.error('Error removing from cart:', error)
     return NextResponse.json(
-      { success: false, error: 'Failed to clear cart' },
+      { success: false, error: 'Failed to remove item from cart' },
       { status: 500 }
     )
   }

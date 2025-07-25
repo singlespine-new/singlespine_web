@@ -5,82 +5,19 @@ import { Search, Filter, Grid, List, Package } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { SearchBar } from '@/components/ui/SearchBar'
 import ProductCard from '@/components/products/ProductCard'
+import ProductDetailsModal from '@/components/products/ProductDetailsModal'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
-
-interface Product {
-  id: string
-  name: string
-  slug: string
-  description: string
-  shortDescription?: string
-  price: number
-  comparePrice?: number
-  images: string[]
-  category: string
-  subcategory?: string
-  tags: string[]
-  isFeatured: boolean
-  stock: number
-  weight?: number
-  origin?: string
-  vendor?: string
-  availability: string
-  variants?: {
-    id: string;
-    name: string;
-    value: string;
-    price?: number;
-    stock?: number;
-  }[]
-}
+import { Product, PaginationInfo } from '@/types'
+import { CATEGORY_SELECT_OPTIONS, SORT_OPTIONS, ORIGIN_OPTIONS } from '@/constants'
 
 interface ProductsResponse {
   success: boolean
   data: {
     products: Product[]
-    pagination: {
-      currentPage: number
-      totalPages: number
-      totalCount: number
-      hasNextPage: boolean
-      hasPreviousPage: boolean
-      limit: number
-    }
+    pagination: PaginationInfo
   }
 }
-
-const CATEGORIES = [
-  { value: '', label: 'All Categories' },
-  { value: 'food-beverages', label: 'Food & Beverages' },
-  { value: 'clothing-accessories', label: 'Clothing & Accessories' },
-  { value: 'home-living', label: 'Home & Living' },
-  { value: 'health-beauty', label: 'Health & Beauty' },
-  { value: 'electronics', label: 'Electronics' },
-  { value: 'books-media', label: 'Books & Media' },
-  { value: 'crafts-art', label: 'Crafts & Art' },
-  { value: 'jewelry', label: 'Jewelry' },
-  { value: 'traditional-wear', label: 'Traditional Wear' },
-  { value: 'spices-herbs', label: 'Spices & Herbs' }
-]
-
-const SORT_OPTIONS = [
-  { value: 'createdAt-desc', label: 'Newest First' },
-  { value: 'createdAt-asc', label: 'Oldest First' },
-  { value: 'price-asc', label: 'Price: Low to High' },
-  { value: 'price-desc', label: 'Price: High to Low' },
-  { value: 'name-asc', label: 'Name: A to Z' },
-  { value: 'name-desc', label: 'Name: Z to A' }
-]
-
-const ORIGINS = [
-  { value: '', label: 'All Origins' },
-  { value: 'Ghana', label: 'Ghana 🇬🇭' },
-  { value: 'Nigeria', label: 'Nigeria 🇳🇬' },
-  { value: 'Kenya', label: 'Kenya 🇰🇪' },
-  { value: 'South Africa', label: 'South Africa 🇿🇦' },
-  { value: 'Ethiopia', label: 'Ethiopia 🇪🇹' }
-]
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
@@ -88,6 +25,8 @@ export default function ProductsPage() {
   const [error, setError] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [showFilters, setShowFilters] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [showProductModal, setShowProductModal] = useState(false)
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('')
@@ -191,6 +130,40 @@ export default function ProductsPage() {
     inStock
   ].filter(Boolean).length
 
+  // Handle product click
+  const handleProductClick = (product: Product) => {
+    setSelectedProduct(product)
+    setShowProductModal(true)
+  }
+
+  // Handle add to cart from modal
+  const handleAddToCart = async (productId: string, quantity: number = 1, variantId?: string) => {
+    try {
+      const response = await fetch('/api/cart', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          productId,
+          variantId,
+          quantity
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to add to cart');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      throw error;
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -219,14 +192,14 @@ export default function ProductsPage() {
         </div>
       </section>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
+      <div className="container mx-auto px-4 py-8 ">
+        <div className="flex flex-col lg:flex-row gap-8 min-h-0">
           {/* Filters Sidebar */}
           <div className={cn(
-            "lg:w-64 space-y-6",
+            "w-full lg:w-64 lg:flex-shrink-0 space-y-6",
             showFilters ? "block" : "hidden lg:block"
           )}>
-            <div className="bg-card border border-border/40 rounded-xl p-6 sticky top-6">
+            <div className="bg-card border border-border/40 rounded-xl p-6 sticky top-6 overflow-hidden max-w-full">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-foreground">Filters</h3>
                 {activeFiltersCount > 0 && (
@@ -241,7 +214,7 @@ export default function ProductsPage() {
                 )}
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-6 min-w-0">
                 {/* Category */}
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
@@ -250,9 +223,9 @@ export default function ProductsPage() {
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full p-2 border border-input rounded-md bg-background text-foreground"
+                    className="w-full max-w-full p-2 border border-input rounded-md bg-background text-foreground text-sm"
                   >
-                    {CATEGORIES.map(cat => (
+                    {CATEGORY_SELECT_OPTIONS.map(cat => (
                       <option key={cat.value} value={cat.value}>
                         {cat.label}
                       </option>
@@ -268,9 +241,9 @@ export default function ProductsPage() {
                   <select
                     value={origin}
                     onChange={(e) => setOrigin(e.target.value)}
-                    className="w-full p-2 border border-input rounded-md bg-background text-foreground"
+                    className="w-full max-w-full p-2 border border-input rounded-md bg-background text-foreground text-sm"
                   >
-                    {ORIGINS.map(orig => (
+                    {ORIGIN_OPTIONS.map(orig => (
                       <option key={orig.value} value={orig.value}>
                         {orig.label}
                       </option>
@@ -283,20 +256,22 @@ export default function ProductsPage() {
                   <label className="block text-sm font-medium text-foreground mb-2">
                     Price Range (₵)
                   </label>
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-2 gap-2 w-full">
                     <input
                       type="number"
                       placeholder="Min"
                       value={minPrice}
                       onChange={(e) => setMinPrice(e.target.value)}
-                      className="flex-1 p-2 border border-input rounded-md bg-background text-foreground"
+                      className="w-full min-w-0 p-2 border border-input rounded-md bg-background text-foreground text-sm"
+                      style={{ maxWidth: '100%' }}
                     />
                     <input
                       type="number"
                       placeholder="Max"
                       value={maxPrice}
                       onChange={(e) => setMaxPrice(e.target.value)}
-                      className="flex-1 p-2 border border-input rounded-md bg-background text-foreground"
+                      className="w-full min-w-0 p-2 border border-input rounded-md bg-background text-foreground text-sm"
+                      style={{ maxWidth: '100%' }}
                     />
                   </div>
                 </div>
@@ -327,7 +302,7 @@ export default function ProductsPage() {
           </div>
 
           {/* Main Content */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {/* Toolbar */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <div className="flex items-center gap-4">
@@ -356,7 +331,7 @@ export default function ProductsPage() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="p-2 border border-input rounded-md bg-background text-foreground text-sm"
+                  className="p-2 border border-input rounded-md bg-background text-foreground text-sm min-w-0 max-w-full"
                 >
                   {SORT_OPTIONS.map(option => (
                     <option key={option.value} value={option.value}>
@@ -427,16 +402,27 @@ export default function ProductsPage() {
               </div>
             ) : (
               <div className={cn(
+                "w-full max-w-full overflow-hidden",
                 viewMode === 'grid'
                   ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
                   : "space-y-6"
               )}>
                 {products.map((product) => (
-                  <ProductCard
+                  <div
                     key={product.id}
-                    product={product}
-                    className={viewMode === 'list' ? "flex flex-row" : ""}
-                  />
+                    onClick={() => handleProductClick(product)}
+                    className="cursor-pointer w-full max-w-full"
+                  >
+                    <ProductCard
+                      product={product}
+                      className={cn(
+                        "w-full max-w-full",
+                        viewMode === 'list' ? "flex flex-row" : ""
+                      )}
+                      showQuickAdd={false}
+                      viewMode={viewMode}
+                    />
+                  </div>
                 ))}
               </div>
             )}
@@ -476,6 +462,14 @@ export default function ProductsPage() {
           </div>
         </div>
       </div>
+
+      {/* Product Details Modal */}
+      <ProductDetailsModal
+        product={selectedProduct}
+        isOpen={showProductModal}
+        onClose={() => setShowProductModal(false)}
+        onAddToCart={handleAddToCart}
+      />
 
       {/* African Pattern Background */}
       <div className="fixed inset-0 pointer-events-none opacity-[0.02] z-0">

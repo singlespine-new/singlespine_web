@@ -1,138 +1,125 @@
-import ProductCard from "../ui/ProductCard";
+'use client'
 
+import { useState, useEffect } from 'react'
+import ProductCard from "../ui/ProductCard"
+import { Product, Category } from '@/types'
+import { PRODUCT_CATEGORIES } from '@/constants/categories'
+import { getMockProductsByCategory, getMockFeaturedProducts } from '@/data/mockData'
 
+interface CategoriesProps {
+  className?: string
+  showAllCategories?: boolean
+  featuredOnly?: boolean
+}
 
-const categoriesData = [
-  {
-    title: "Chocolates & Cakes",
-    products: [
-      {
-        image: "/images/cake_1.png",
-        name: "Intense dark chocolate",
-        description: "Zesty mint and rich cocoa makes this bar inviting",
-        price: "€3.40",
-        deliveryTime: "30-40 min",
-        tag: "Bioko Treats - Osu",
-      },
-      {
-        image: "/images/cake_2.png",
-        name: "Cakes & Gardens - Legon",
-        description: "Zesty mint and rich cocoa makes this bar inviting",
-        price: "€3.40",
-        deliveryTime: "45-50 min",
-        tag: "Bioko Treats - Osu",
-      },
-      {
-        image: "/images/cake_3.png",
-        name: "Intense dark chocolate",
-        description: "Zesty mint and rich cocoa makes this bar inviting",
-        price: "€3.40",
-        deliveryTime: "30-40 min",
-        tag: "Bioko Treats - Osu",
-      },
-    ],
-  },
-  {
-    title: "Flowers & Floral",
-    products: [
-      {
-        image: "/images/flower_1.png",
-        name: "Flowers Ghana - Madina",
-        description: "Zesty mint and rich cocoa makes this bar inviting",
-        price: "€3.40",
-        deliveryTime: "30-40 min",
-        tag: "Bioko Treats - Osu",
-      },
-      {
-        image: "/images/flower_2.png",
-        name: "Flowers Ghana - Haatso",
-        description: "Zesty mint and rich cocoa makes this bar inviting",
-        price: "€3.40",
-        deliveryTime: "30-40 min",
-        tag: "Bioko Treats - Osu",
-      },
-      {
-        image: "/images/flower_3.png",
-        name: "Nene's Flora - Adenta",
-        description: "Zesty mint and rich cocoa makes this bar inviting",
-        price: "€3.40",
-        deliveryTime: "30-40 min",
-        tag: "Bioko Treats - Osu",
-      },
-    ]
-  },
-  {
-    title: "Restaurants",
-    products: [
-      {
-        image: "/images/bioko_1.png",
-        name: "Choppers Inn - Adenta down",
-        description: "Zesty mint and rich cocoa makes this bar inviting",
-        price: "€3.40",
-        deliveryTime: "30-40 min",
-        tag: "Bioko Treats - Osu",
-      },
-      {
-        image: "/images/bioko_2.png",
-        name: "NsuomNam - Cantoments",
-        description: "Zesty mint and rich cocoa makes this bar inviting",
-        price: "€3.40",
-        deliveryTime: "30-40 min",
-        tag: "Bioko Treats - Osu",
-      },
-      {
-        image: "/images/bioko_3.png",
-        name: "DziDzi - Ashaley Botwe",
-        description: "Zesty mint and rich cocoa makes this bar inviting",
-        price: "€3.40",
-        deliveryTime: "30-40 min",
-        tag: "Bioko Treats - Osu",
-      },
-      {
-        image: "/images/bioko_4.png",
-        name: "Choppers Inn - Circle",
-        description: "Zesty mint and rich cocoa makes this bar inviting",
-        price: "€3.40",
-        deliveryTime: "30-40 min",
-        tag: "Bioko Treats - Osu",
-      },
-      {
-        image: "/images/bioko_2.png",
-        name: "Choppers Inn - Circle",
-        description: "Zesty mint and rich cocoa makes this bar inviting",
-        price: "€3.40",
-        deliveryTime: "30-40 min",
-        tag: "Bioko Treats - Osu",
-      },
-      {
-        image: "/images/bioko_4.png",
-        name: "NsuomNam - Adenta Commandos",
-        description: "Zesty mint and rich cocoa makes this bar inviting",
-        price: "€3.40",
-        deliveryTime: "30-40 min",
-        tag: "Bioko Treats - Osu",
-      },
-    ]
+const Categories = ({
+  className = '',
+  showAllCategories = false,
+  featuredOnly = false
+}: CategoriesProps) => {
+  const [categorizedProducts, setCategorizedProducts] = useState<{
+    category: Category
+    products: Product[]
+  }[]>([])
+
+  useEffect(() => {
+    // Get categories to display
+    const categoriesToShow = showAllCategories
+      ? PRODUCT_CATEGORIES
+      : PRODUCT_CATEGORIES.slice(0, 3) // Show first 3 categories by default
+
+    // Get products for each category
+    const categoryData = categoriesToShow.map(category => {
+      let products: Product[]
+
+      if (featuredOnly) {
+        // Get featured products for this category
+        products = getMockFeaturedProducts().filter(product =>
+          product.category === category.id
+        )
+      } else {
+        // Get all products for this category
+        products = getMockProductsByCategory(category.id)
+      }
+
+      // Limit to 6 products per category for display
+      products = products.slice(0, 6)
+
+      return {
+        category,
+        products
+      }
+    }).filter(item => item.products.length > 0) // Only show categories with products
+
+    setCategorizedProducts(categoryData)
+  }, [showAllCategories, featuredOnly])
+
+  if (categorizedProducts.length === 0) {
+    return (
+      <div className="p-4 bg-gray-50">
+        <div className="text-center py-8">
+          <p className="text-gray-500">No products available at the moment.</p>
+        </div>
+      </div>
+    )
   }
-];
 
-
-
-const Categories = () => {
   return (
-    <div className="p-4 bg-gray-50 flex flex-col space-y-2">
-      {categoriesData.map((category) => (
-        <div key={category.title} className="mb-16">
-          <h3 className="text-3xl font-bold mb-4 ml-2">{category.title}</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {category.products.map((product, index) => (
-              <ProductCard key={`${category.title}-${index}`} product={product} />
+    <div className={`p-4 bg-gray-50 flex flex-col space-y-8 ${className}`}>
+      {categorizedProducts.map(({ category, products }) => (
+        <section key={category.id} className="mb-8">
+          {/* Category Header */}
+          <div className="mb-6">
+            <h2 className="text-3xl font-bold text-gray-800 mb-2">{category.name}</h2>
+            {category.description && (
+              <p className="text-gray-600 text-lg">{category.description}</p>
+            )}
+          </div>
+
+          {/* Products Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+            {products.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                className="hover:shadow-lg transition-shadow duration-200"
+              />
             ))}
           </div>
-        </div>
+
+          {/* View More Link */}
+          {products.length >= 6 && (
+            <div className="mt-6 text-center">
+              <button
+                className="text-blue-600 hover:text-blue-800 font-semibold text-lg hover:underline transition-colors duration-200"
+                onClick={() => {
+                  // Navigate to category page - would implement routing here
+                  console.log(`Navigate to category: ${category.slug}`)
+                }}
+              >
+                View all {category.name} →
+              </button>
+            </div>
+          )}
+        </section>
       ))}
+
+      {/* Show All Categories Button */}
+      {!showAllCategories && PRODUCT_CATEGORIES.length > 3 && (
+        <div className="text-center py-8">
+          <button
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
+            onClick={() => {
+              // This would typically update URL params or trigger a state change
+              console.log('Show all categories')
+            }}
+          >
+            Explore All Categories
+          </button>
+        </div>
+      )}
     </div>
   )
 }
 
-export default Categories;
+export default Categories

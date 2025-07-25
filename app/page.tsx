@@ -18,6 +18,7 @@ export default function Home() {
             priority
             quality={100}
             // Apply object-right by default (mobile), then object-center from 'md' breakpoint up
+            // height={'300'}
             className="object-cover object-right md:object-center"
             sizes="100vw"
           />
