@@ -15,7 +15,7 @@ interface ProductVariant {
   name: string
   value: string
   price?: number
-  stock: number
+  stock?: number
 }
 
 interface ProductCardProps {
@@ -68,6 +68,7 @@ export default function ProductCard({ product, className, showQuickAdd = true }:
 
     try {
       addItem({
+        id: product.id,
         productId: product.id,
         name: product.name,
         price: product.price,

@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, ProductAvailability } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
@@ -25,7 +25,7 @@ export const AFRICAN_PRODUCTS = [
     weight: 0.5,
     origin: "Ghana",
     vendor: "Kuapa Kokoo Cooperative",
-    availability: "IN_STOCK"
+    availability: ProductAvailability.IN_STOCK
   },
   {
     name: "Authentic Shea Butter (Raw)",
@@ -47,7 +47,7 @@ export const AFRICAN_PRODUCTS = [
     weight: 0.25,
     origin: "Ghana",
     vendor: "Northern Women's Shea Cooperative",
-    availability: "IN_STOCK"
+    availability: ProductAvailability.IN_STOCK
   },
   {
     name: "Kente Cloth Table Runner",
@@ -68,7 +68,7 @@ export const AFRICAN_PRODUCTS = [
     weight: 0.3,
     origin: "Ghana",
     vendor: "Bonwire Kente Weavers",
-    availability: "IN_STOCK"
+    availability: ProductAvailability.IN_STOCK
   },
   {
     name: "African Black Soap (Dudu Osun)",
@@ -89,7 +89,7 @@ export const AFRICAN_PRODUCTS = [
     weight: 0.15,
     origin: "Nigeria",
     vendor: "Tropical Naturals",
-    availability: "IN_STOCK"
+    availability: ProductAvailability.IN_STOCK
   },
   {
     name: "Adinkra Symbol Wall Art Set",
@@ -111,7 +111,7 @@ export const AFRICAN_PRODUCTS = [
     weight: 1.2,
     origin: "Ghana",
     vendor: "Kumase Craft Collective",
-    availability: "IN_STOCK"
+    availability: ProductAvailability.IN_STOCK
   },
   {
     name: "Moringa Leaf Powder (Organic)",
@@ -132,7 +132,7 @@ export const AFRICAN_PRODUCTS = [
     weight: 0.3,
     origin: "Ghana",
     vendor: "Moringa Ghana Ltd",
-    availability: "IN_STOCK"
+    availability: ProductAvailability.IN_STOCK
   },
   {
     name: "Ankara Print Face Masks (3-Pack)",
@@ -153,7 +153,7 @@ export const AFRICAN_PRODUCTS = [
     weight: 0.1,
     origin: "Ghana",
     vendor: "Accra Fashion House",
-    availability: "IN_STOCK"
+    availability: ProductAvailability.IN_STOCK
   },
   {
     name: "Baobab Fruit Powder",
@@ -174,7 +174,7 @@ export const AFRICAN_PRODUCTS = [
     weight: 0.25,
     origin: "South Africa",
     vendor: "Baobab Harvest Co-op",
-    availability: "IN_STOCK"
+    availability: ProductAvailability.IN_STOCK
   },
   {
     name: "Carved Wooden Elephant Family",
@@ -195,7 +195,7 @@ export const AFRICAN_PRODUCTS = [
     weight: 0.8,
     origin: "Kenya",
     vendor: "Maasai Carvers Collective",
-    availability: "IN_STOCK"
+    availability: ProductAvailability.IN_STOCK
   },
   {
     name: "Ethiopian Coffee Beans (Single Origin)",
@@ -216,7 +216,7 @@ export const AFRICAN_PRODUCTS = [
     weight: 0.45,
     origin: "Ethiopia",
     vendor: "Sidamo Coffee Farmers Union",
-    availability: "IN_STOCK"
+    availability: ProductAvailability.IN_STOCK
   },
   {
     name: "Mud Cloth Throw Pillow Covers (Set of 2)",
@@ -237,7 +237,7 @@ export const AFRICAN_PRODUCTS = [
     weight: 0.4,
     origin: "Mali",
     vendor: "Bamako Textile Artisans",
-    availability: "IN_STOCK"
+    availability: ProductAvailability.IN_STOCK
   },
   {
     name: "African Healing Tea Blend",
@@ -258,7 +258,7 @@ export const AFRICAN_PRODUCTS = [
     weight: 0.2,
     origin: "South Africa",
     vendor: "Cape Town Herbals",
-    availability: "IN_STOCK"
+    availability: ProductAvailability.IN_STOCK
   },
   {
     name: "Handwoven Grass Basket with Lid",
@@ -279,7 +279,7 @@ export const AFRICAN_PRODUCTS = [
     weight: 0.6,
     origin: "Ghana",
     vendor: "Northern Ghana Weavers",
-    availability: "LOW_STOCK"
+    availability: ProductAvailability.LOW_STOCK
   },
   {
     name: "Cowrie Shell Jewelry Set",
@@ -300,7 +300,7 @@ export const AFRICAN_PRODUCTS = [
     weight: 0.15,
     origin: "Ghana",
     vendor: "Coastal Craft Collective",
-    availability: "IN_STOCK"
+    availability: ProductAvailability.IN_STOCK
   },
   {
     name: "African Print Tote Bag",
@@ -321,7 +321,7 @@ export const AFRICAN_PRODUCTS = [
     weight: 0.3,
     origin: "Ghana",
     vendor: "Accra Fashion House",
-    availability: "IN_STOCK"
+    availability: ProductAvailability.IN_STOCK
   },
   {
     name: "Djembe Drum (Small)",
@@ -342,7 +342,7 @@ export const AFRICAN_PRODUCTS = [
     weight: 2.5,
     origin: "Mali",
     vendor: "Bamako Music Crafters",
-    availability: "IN_STOCK"
+    availability: ProductAvailability.IN_STOCK
   }
 ]
 

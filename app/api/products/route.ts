@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
+import { Prisma, ProductAvailability } from '@prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
 
 // GET /api/products - Fetch products with filtering and pagination
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const sortOrder = searchParams.get('sortOrder') || 'desc'
     const origin = searchParams.get('origin')
     const vendor = searchParams.get('vendor')
-    const availability = searchParams.get('availability') as Prisma.ProductAvailability | undefined
+    const availability = searchParams.get('availability') as ProductAvailability | undefined
 
     // Calculate offset
     const offset = (page - 1) * limit

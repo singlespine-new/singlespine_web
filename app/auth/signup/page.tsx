@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -18,7 +18,7 @@ interface UserDetails {
   email?: string
 }
 
-export default function SignUpPage() {
+function SignUpPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || '/'
@@ -389,22 +389,32 @@ export default function SignUpPage() {
                   value={otp}
                   onChange={setOtp}
                   numInputs={6}
-                  separator={<span className="mx-1"></span>}
-                  inputStyle={{
-                    width: '45px',
-                    height: '45px',
-                    margin: '0 2px',
-                    fontSize: '18px',
-                    borderRadius: '8px',
-                    border: '2px solid #e5e7eb',
-                    backgroundColor: 'white',
-                    color: '#111827'
-                  }}
-                  focusStyle={{
-                    border: '2px solid #f97316',
-                    outline: 'none'
-                  }}
-                  isDisabled={isLoading}
+                  shouldAutoFocus={false}
+                  renderInput={(props) => (
+                    <input
+                      {...props}
+                      disabled={isLoading}
+                      style={{
+                        width: '45px',
+                        height: '45px',
+                        margin: '0 4px',
+                        fontSize: '18px',
+                        borderRadius: '8px',
+                        border: '2px solid #e5e7eb',
+                        backgroundColor: 'white',
+                        color: '#111827',
+                        textAlign: 'center',
+                        outline: 'none',
+                        ...props.style
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.border = '2px solid #f97316'
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.border = '2px solid #e5e7eb'
+                      }}
+                    />
+                  )}
                 />
               </div>
 
@@ -558,5 +568,13 @@ export default function SignUpPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <SignUpPageContent />
+    </Suspense>
   )
 }

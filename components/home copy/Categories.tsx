@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import ProductCard, { Product } from '@/components/ui/ProductCard'
+import ProductCard, { Product } from '@/components/ui/ProductCard copy'
 
 // Mock data that reflects the new, more detailed Product interface
 const categoriesData: { title: string; products: Product[] }[] = [
