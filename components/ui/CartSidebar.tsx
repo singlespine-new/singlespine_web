@@ -9,6 +9,8 @@ import { useCartStore, getEmptyCartMessage } from '@/lib/store/cart'
 import { formatCurrency } from '@/lib/stripe'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { CompactCheckoutButton } from '@/components/ui/CheckoutButton'
+import { useAuth } from '@/lib/auth-utils'
 
 interface CartSidebarProps {
   isOpen: boolean
@@ -27,6 +29,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
     getFinalTotal
   } = useCartStore()
 
+  const { isAuthenticated } = useAuth()
   const totalItems = getTotalItems()
   const subtotal = getTotalPrice()
   const shippingCost = getShippingCost()
@@ -348,11 +351,9 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
 
               {/* Action Buttons */}
               <div className="space-y-3">
-                <Button asChild className="w-full font-semibold" size="lg">
-                  <Link href="/checkout" onClick={onClose}>
-                    Proceed to Checkout
-                  </Link>
-                </Button>
+                <div onClick={onClose}>
+                  <CompactCheckoutButton />
+                </div>
 
                 <Button
                   variant="outline"

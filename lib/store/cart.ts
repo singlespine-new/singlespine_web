@@ -1,3 +1,4 @@
+import { triggerAuth } from '@/lib/auth-utils'
 import toast from 'react-hot-toast'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
@@ -40,10 +41,11 @@ interface CartStore {
   shippingInfo: ShippingInfo | null
 
   // Cart actions
-  addItem: (item: Omit<CartItem, 'quantity'>) => void
+  addItem: (item: Omit<CartItem, 'quantity'>, isAuthenticated?: boolean) => void
   removeItem: (itemId: string) => void
   updateQuantity: (itemId: string, quantity: number) => void
   clearCart: () => void
+  proceedToCheckout: (isAuthenticated: boolean) => void
 
   // UI state
   openCart: () => void
@@ -71,7 +73,7 @@ export const useCartStore = create<CartStore>()(
       isOpen: false,
       shippingInfo: null,
 
-      addItem: (newItem) => {
+      addItem: (newItem, isAuthenticated = true) => {
         const state = get()
         const existingItemIndex = state.items.findIndex(
           item => item.productId === newItem.productId &&
@@ -234,6 +236,29 @@ export const useCartStore = create<CartStore>()(
             item.variantId === variantId
         )
         return item?.quantity || 0
+      },
+
+      proceedToCheckout: (isAuthenticated) => {
+        const state = get()
+
+        if (state.items.length === 0) {
+          toast.error('Your cart is empty! Add some items first.', {
+            icon: '🛒'
+          })
+          return
+        }
+
+        if (!isAuthenticated) {
+          triggerAuth({
+            callbackUrl: '/checkout',
+            message: 'Please sign in to complete your checkout 🔐',
+            action: 'signin'
+          })
+          return
+        }
+
+        // If authenticated, redirect to checkout
+        window.location.href = '/checkout'
       }
     }),
     {

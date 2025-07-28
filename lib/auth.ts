@@ -60,14 +60,20 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.phoneNumber || !credentials?.otp) {
+          console.error('Phone OTP auth: Missing credentials')
           throw new Error('Missing phone number or OTP')
         }
+
+        console.log('Phone OTP auth: Verifying OTP for', credentials.phoneNumber)
 
         // Verify OTP
         const otpResult = verifyOTP(credentials.phoneNumber, credentials.otp)
         if (!otpResult.valid) {
+          console.error('Phone OTP auth: OTP verification failed', otpResult.message)
           throw new Error(otpResult.message)
         }
+
+        console.log('Phone OTP auth: OTP verified successfully')
 
         // Format phone number
         const formattedPhone = formatPhoneNumber(credentials.phoneNumber)
@@ -110,12 +116,18 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt'
   },
+  debug: process.env.NODE_ENV === 'development',
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.role = user.role
         token.id = user.id
         token.phoneNumber = user.phoneNumber
+        token.picture = user.image
+        console.log('JWT callback: Updated token for user', user.id)
+      }
+      if (account) {
+        console.log('JWT callback: Account provider', account.provider)
       }
       return token
     },
@@ -124,12 +136,27 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id || token.sub!
         session.user.role = token.role as string
         session.user.phoneNumber = token.phoneNumber as string
+        session.user.image = token.picture as string
+        console.log('Session callback: Created session for user', session.user.id)
       }
       return session
+    },
+    async signIn({ user, account, profile }) {
+      console.log('SignIn callback: Provider', account?.provider, 'User ID', user?.id)
+      return true
+    },
+    async redirect({ url, baseUrl }) {
+      console.log('Redirect callback: From', url, 'Base', baseUrl)
+      // Allows relative callback URLs
+      if (url.startsWith("/")) return `${baseUrl}${url}`
+      // Allows callback URLs on the same origin
+      else if (new URL(url).origin === baseUrl) return url
+      return baseUrl
     }
   },
   pages: {
     signIn: '/auth/signin',
+    error: '/auth/signin',
   },
   secret: process.env.NEXTAUTH_SECRET,
 }

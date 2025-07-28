@@ -366,7 +366,7 @@ export const formatDate = (
     long: { month: 'long', day: 'numeric', year: 'numeric' },
     full: { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' },
     time: { hour: 'numeric', minute: '2-digit', hour12: true }
-  }[format]
+  }[format] as Intl.DateTimeFormatOptions
 
   return dateObj.toLocaleDateString('en-US', options)
 }
@@ -442,7 +442,7 @@ export const omit = <T, K extends keyof T>(
   return result
 }
 
-export const pick = <T, K extends keyof T>(
+export const pick = <T extends object, K extends keyof T>(
   obj: T,
   keys: K[]
 ): Pick<T, K> => {

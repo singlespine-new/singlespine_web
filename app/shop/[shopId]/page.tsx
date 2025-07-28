@@ -449,7 +449,10 @@ export default function ShopPage() {
                     origin: product.origin,
                     vendor: product.vendor,
                     availability: product.availability,
-                    variants: product.variants
+                    variants: product.variants,
+                    isActive: product.isActive,
+                    createdAt: product.createdAt,
+                    updatedAt: product.updatedAt
                   }
 
                   return (
@@ -479,7 +482,6 @@ export default function ShopPage() {
       <ProductDetailsModal
         product={selectedProduct ? {
           ...selectedProduct,
-          deliveryTime: '30-40 min',
           rating: 4.5,
           reviewCount: 23,
         } : null}

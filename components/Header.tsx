@@ -13,14 +13,25 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"; // Corrected import path
-import { Menu, ShoppingBag, Heart } from 'lucide-react';
+import { Menu, ShoppingBag, Heart, User, LogOut, Package, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils'; // Import cn utility
 import { useCartStore } from '@/lib/store/cart';
+import { useAuth } from '@/lib/auth-utils';
+import { signOut } from 'next-auth/react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Header = () => {
   const [isOpen, setIsOpen] = React.useState(false);
   const pathname = usePathname(); // Get current pathname
   const { openCart, getTotalItems } = useCartStore();
+  const { isAuthenticated, user, isLoading } = useAuth();
   const cartItemsCount = getTotalItems();
 
   const navLinks = [
@@ -29,6 +40,14 @@ const Header = () => {
     { label: 'How it Works', href: '/how-it-works' },
     // { label: 'About Us', href: '/about' },
   ];
+
+  const handleSignOut = async () => {
+    try {
+      await signOut({ callbackUrl: '/' });
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
@@ -84,12 +103,68 @@ const Header = () => {
             )}
           </Button>
 
-          <Button variant="secondary" size="sm" asChild className='font-semibold'>
-            <Link href="/auth/signin">Sign In</Link>
-          </Button>
-          <Button variant="default" size="sm" asChild className='font-semibold'>
-            <Link href="/auth/signup">Sign Up</Link>
-          </Button>
+          {/* Authentication Section */}
+          {isLoading ? (
+            <div className="animate-pulse bg-muted rounded h-8 w-20"></div>
+          ) : isAuthenticated ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0 overflow-hidden">
+                  {user?.image ? (
+                    <Image
+                      src={user.image}
+                      alt={user?.name || 'User Avatar'}
+                      width={32}
+                      height={32}
+                      className="w-full h-full rounded-full object-cover"
+
+                    />
+                  ) : (
+                    <User className="h-4 w-4" />
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      {user?.name || 'User'}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user?.email || user?.phoneNumber || 'Account'}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/orders" className="cursor-pointer">
+                    <Package className="mr-2 h-4 w-4" />
+                    <span>My Orders</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/profile" className="cursor-pointer">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Sign Out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <>
+              <Button variant="secondary" size="sm" asChild className='font-semibold'>
+                <Link href="/auth/signin">Sign In</Link>
+              </Button>
+              <Button variant="default" size="sm" asChild className='font-semibold'>
+                <Link href="/auth/signup">Sign Up</Link>
+              </Button>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu */}
@@ -160,12 +235,40 @@ const Header = () => {
                   </Button>
                 </div>
 
-                <Button variant="secondary" asChild className='w-full font-semibold' onClick={() => setIsOpen(false)}>
-                  <Link href="/auth/signin">Sign In</Link>
-                </Button>
-                <Button variant="default" asChild className='w-full font-semibold' onClick={() => setIsOpen(false)}>
-                  <Link href="/auth/signup">Sign Up</Link>
-                </Button>
+                {/* Mobile Authentication */}
+                {isLoading ? (
+                  <div className="animate-pulse bg-muted rounded h-10 w-full"></div>
+                ) : isAuthenticated ? (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <p className="text-sm font-medium">{user?.name || 'User'}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {user?.email || user?.phoneNumber || 'Account'}
+                      </p>
+                    </div>
+                    <SheetClose asChild>
+                      <Button variant="outline" asChild className='w-full' onClick={() => setIsOpen(false)}>
+                        <Link href="/orders">
+                          <Package className="h-4 w-4 mr-2" />
+                          My Orders
+                        </Link>
+                      </Button>
+                    </SheetClose>
+                    <Button variant="secondary" onClick={handleSignOut} className='w-full font-semibold'>
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Sign Out
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <Button variant="secondary" asChild className='w-full font-semibold' onClick={() => setIsOpen(false)}>
+                      <Link href="/auth/signin">Sign In</Link>
+                    </Button>
+                    <Button variant="default" asChild className='w-full font-semibold' onClick={() => setIsOpen(false)}>
+                      <Link href="/auth/signup">Sign Up</Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </SheetContent>
           </Sheet>

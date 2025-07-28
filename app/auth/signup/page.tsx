@@ -10,6 +10,7 @@ import { Phone, ArrowLeft, CheckCircle, Loader2, User, Mail } from 'lucide-react
 import toast from 'react-hot-toast'
 import OtpInput from 'react-otp-input'
 import Image from 'next/image'
+import { useAuth, useAuthRedirect, authEvents } from '@/lib/auth-utils'
 
 type AuthMode = 'select' | 'phone' | 'otp' | 'details'
 
@@ -22,6 +23,9 @@ function SignUpPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || '/'
+
+  // Use auth redirect hook
+  useAuthRedirect()
 
   const [mode, setMode] = useState<AuthMode>('select')
   const [phoneNumber, setPhoneNumber] = useState('')
@@ -59,7 +63,7 @@ function SignUpPageContent() {
       await signIn('google', { callbackUrl })
     } catch (error) {
       console.error('Google sign up error:', error)
-      toast.error('Failed to sign up with Google. Please try again.')
+      authEvents.onSignInError('Google sign up failed. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -168,12 +172,13 @@ function SignUpPageContent() {
       })
 
       if (result?.error) {
-        toast.error(result.error)
+        authEvents.onSignInError(result.error)
       } else if (result?.ok) {
+        authEvents.onSignInSuccess(callbackUrl)
         toast.success('Account created successfully! Welcome to Singlespine! 🎉', {
           duration: 5000
         })
-        router.push(callbackUrl)
+        // The useAuthRedirect hook will handle the redirect
       }
     } catch (error) {
       console.error('Registration error:', error)
@@ -231,8 +236,18 @@ function SignUpPageContent() {
             Join Singlespine
           </h1> */}
           <p className="text-gray-600 dark:text-gray-400">
-            Create your account to start shopping
+            {callbackUrl !== '/products'
+              ? 'Create your account to continue where you left off'
+              : 'Create your account to start shopping'
+            }
           </p>
+          {callbackUrl.includes('/checkout') && (
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                🛒 Create an account to complete your checkout
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Auth Card */}

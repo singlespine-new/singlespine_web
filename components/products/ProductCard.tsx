@@ -7,6 +7,8 @@ import { Heart, MapPin, Package, ShoppingCart, Star, Truck, Eye, Clock } from 'l
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { Product } from '@/types'
+import { useAuth, triggerAuth } from '@/lib/auth-utils'
+import { useCartStore } from '@/lib/store/cart'
 import toast from 'react-hot-toast'
 
 interface ProductCardProps {
@@ -24,6 +26,8 @@ export default function ProductCard({
   viewMode = 'grid',
   onClick
 }: ProductCardProps) {
+  const { isAuthenticated } = useAuth()
+  const { addItem } = useCartStore()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isWishlisted, setIsWishlisted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -80,38 +84,34 @@ export default function ProductCard({
 
     if (isOutOfStock) return
 
+    // Check authentication first
+    if (!isAuthenticated) {
+      triggerAuth({
+        callbackUrl: window.location.href,
+        message: 'Please sign in to add items to your cart 🛒',
+        action: 'signin'
+      })
+      return
+    }
+
     setIsLoading(true)
 
     try {
-      const response = await fetch('/api/cart', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          productId: product.id,
-          quantity: 1
-        }),
-      })
+      // Use cart store's addItem method
+      addItem({
+        id: `${product.id}-default`,
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+        image: product.images[0] || '/placeholder-product.jpg',
+        maxQuantity: product.stock,
+        metadata: {
+          weight: product.weight,
+          origin: product.origin,
+          vendor: product.vendor
+        }
+      }, isAuthenticated)
 
-      const data = await response.json()
-
-      if (data.success) {
-        toast.success(`${product.name} added to cart! 🛒`, {
-          icon: '✨',
-          style: {
-            background: 'hsl(var(--primary))',
-            color: 'hsl(var(--primary-foreground))',
-            borderRadius: '12px',
-            padding: '16px',
-            fontSize: '14px',
-            fontWeight: '500',
-          },
-          duration: 3000,
-        })
-      } else {
-        throw new Error(data.error || 'Failed to add to cart')
-      }
     } catch (err) {
       console.error(err)
       toast.error('Failed to add item to cart', {
@@ -129,6 +129,17 @@ export default function ProductCard({
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
+
+    // Check authentication for wishlist
+    if (!isAuthenticated) {
+      triggerAuth({
+        callbackUrl: window.location.href,
+        message: 'Please sign in to add items to your wishlist ❤️',
+        action: 'signin'
+      })
+      return
+    }
+
     setIsWishlisted(!isWishlisted)
 
     toast.success(

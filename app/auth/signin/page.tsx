@@ -10,6 +10,7 @@ import { Phone, ArrowLeft, CheckCircle, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import OtpInput from 'react-otp-input'
 import Image from 'next/image'
+import { useAuth, useAuthRedirect, authEvents } from '@/lib/auth-utils'
 
 type AuthMode = 'select' | 'phone' | 'otp'
 
@@ -17,6 +18,9 @@ function SignInPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || '/'
+
+  // Use auth redirect hook
+  useAuthRedirect()
 
   const [mode, setMode] = useState<AuthMode>('select')
   const [phoneNumber, setPhoneNumber] = useState('')
@@ -52,7 +56,7 @@ function SignInPageContent() {
       await signIn('google', { callbackUrl })
     } catch (error) {
       console.error('Google sign in error:', error)
-      toast.error('Failed to sign in with Google. Please try again.')
+      authEvents.onSignInError('Google sign in failed. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -123,10 +127,10 @@ function SignInPageContent() {
         })
 
         if (result?.error) {
-          toast.error(result.error)
+          authEvents.onSignInError(result.error)
         } else if (result?.ok) {
-          toast.success('Successfully signed in! 🎉')
-          router.push(callbackUrl)
+          authEvents.onSignInSuccess(callbackUrl)
+          // The useAuthRedirect hook will handle the redirect
         }
       } else {
         toast.error(verifyData.message)
@@ -188,8 +192,18 @@ function SignInPageContent() {
             Welcome back
           </h1> */}
           <p className="text-gray-600 dark:text-gray-400">
-            Sign in to continue your shopping journey
+            {callbackUrl !== '/products'
+              ? 'Sign in to continue where you left off'
+              : 'Sign in to continue your shopping journey'
+            }
           </p>
+          {callbackUrl.includes('/checkout') && (
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                🛒 You need to sign in to complete your checkout
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Auth Card */}
