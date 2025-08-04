@@ -8,7 +8,6 @@ import "./globals.css";
 import { Toaster } from 'react-hot-toast';
 import CartProvider from "@/components/providers/CartProvider";
 import SessionProvider from "@/components/providers/SessionProvider";
-import { Suspense } from "react";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -43,45 +42,42 @@ export default function RootLayout({
         )}
       >
         <div className="relative flex min-h-dvh flex-col bg-white">
-          <Suspense>
-
-            <SessionProvider>
-              <CartProvider>
-                <Header />
-                <main className="flex-1">{children}</main>
-                <Footer />
-                <Toaster
-                  position="top-right"
-                  toastOptions={{
-                    duration: 4000,
+          <SessionProvider>
+            <CartProvider>
+              <Header />
+              <main className="flex-1">{children}</main>
+              <Footer />
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  duration: 4000,
+                  style: {
+                    background: '#FC8120',
+                    color: 'white',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                  },
+                  success: {
+                    iconTheme: {
+                      primary: '#FC8120',
+                      secondary: 'white',
+                    },
+                  },
+                  error: {
                     style: {
-                      background: '#FC8120',
-                      color: 'white',
-                      borderRadius: '12px',
-                      padding: '16px',
-                      fontSize: '14px',
-                      fontWeight: '500',
+                      background: '#ef4444',
                     },
-                    success: {
-                      iconTheme: {
-                        primary: '#FC8120',
-                        secondary: 'white',
-                      },
+                    iconTheme: {
+                      primary: '#ef4444',
+                      secondary: 'white',
                     },
-                    error: {
-                      style: {
-                        background: '#ef4444',
-                      },
-                      iconTheme: {
-                        primary: '#ef4444',
-                        secondary: 'white',
-                      },
-                    },
-                  }}
-                />
-              </CartProvider>
-            </SessionProvider>
-          </Suspense>
+                  },
+                }}
+              />
+            </CartProvider>
+          </SessionProvider>
         </div>
       </body>
     </html>
