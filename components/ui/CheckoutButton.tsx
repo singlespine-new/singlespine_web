@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/lib/auth-utils'
 import { useCartStore } from '@/lib/store/cart'
 import { ShoppingCart, Lock, ArrowRight, Loader2 } from 'lucide-react'
-import toast from 'react-hot-toast'
+import toast from '@/components/ui/toast'
 
 interface CheckoutButtonProps {
   variant?: 'default' | 'outline' | 'ghost' | 'secondary'

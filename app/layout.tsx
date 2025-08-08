@@ -6,8 +6,9 @@ import Footer from "@/components/Footer";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 import { Toaster } from 'react-hot-toast';
-import CartProvider from "@/components/providers/CartProvider";
+import UIProvider from "@/components/providers/CartProvider";
 import SessionProvider from "@/components/providers/SessionProvider";
+import { FloatingCheckoutButton } from "@/components/ui/CheckoutButton";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -43,40 +44,18 @@ export default function RootLayout({
       >
         <div className="relative flex min-h-dvh flex-col bg-white">
           <SessionProvider>
-            <CartProvider>
+            <UIProvider>
               <Header />
               <main className="flex-1">{children}</main>
               <Footer />
+              <FloatingCheckoutButton />
               <Toaster
                 position="top-right"
                 toastOptions={{
                   duration: 4000,
-                  style: {
-                    background: '#FC8120',
-                    color: 'white',
-                    borderRadius: '12px',
-                    padding: '16px',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                  },
-                  success: {
-                    iconTheme: {
-                      primary: '#FC8120',
-                      secondary: 'white',
-                    },
-                  },
-                  error: {
-                    style: {
-                      background: '#ef4444',
-                    },
-                    iconTheme: {
-                      primary: '#ef4444',
-                      secondary: 'white',
-                    },
-                  },
                 }}
               />
-            </CartProvider>
+            </UIProvider>
           </SessionProvider>
         </div>
       </body>

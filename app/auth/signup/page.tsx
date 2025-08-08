@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 import { Phone, ArrowLeft, CheckCircle, Loader2, User, Mail } from 'lucide-react'
 // import { cn } from '@/lib/utils'
-import toast from 'react-hot-toast'
+import toast from '@/components/ui/toast'
 import OtpInput from 'react-otp-input'
 import Image from 'next/image'
 import { useAuth, useAuthRedirect, authEvents } from '@/lib/auth-utils'
@@ -92,7 +92,7 @@ function SignUpPageContent() {
         setResendCooldown(120) // 2 minutes cooldown
         toast.success(data.message, {
           duration: 5000,
-          icon: '📱'
+          icon: <Phone className="w-5 h-5" />
         })
       } else {
         toast.error(data.message)
@@ -128,7 +128,7 @@ function SignUpPageContent() {
         setOtpVerified(true)
         setMode('details')
         toast.success('Phone verified! Please complete your profile.', {
-          icon: '✅'
+          icon: <CheckCircle className="w-5 h-5" />
         })
       } else {
         toast.error(verifyData.message)
@@ -176,7 +176,8 @@ function SignUpPageContent() {
       } else if (result?.ok) {
         authEvents.onSignInSuccess(callbackUrl)
         toast.success('Account created successfully! Welcome to Singlespine! 🎉', {
-          duration: 5000
+          duration: 5000,
+          icon: <CheckCircle className="w-5 h-5" />
         })
         // The useAuthRedirect hook will handle the redirect
       }

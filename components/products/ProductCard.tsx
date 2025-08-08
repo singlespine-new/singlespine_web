@@ -9,7 +9,8 @@ import { cn } from '@/lib/utils'
 import { Product } from '@/types'
 import { useAuth, triggerAuth } from '@/lib/auth-utils'
 import { useCartStore } from '@/lib/store/cart'
-import toast from 'react-hot-toast'
+import { useWishlistStore } from '@/lib/store/wishlist'
+import toast from '@/components/ui/toast'
 
 interface ProductCardProps {
   product: Product
@@ -28,10 +29,13 @@ export default function ProductCard({
 }: ProductCardProps) {
   const { isAuthenticated } = useAuth()
   const { addItem } = useCartStore()
+  const { addItem: addToWishlist, removeItem: removeFromWishlist, isItemInWishlist } = useWishlistStore()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [isWishlisted, setIsWishlisted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [imageLoading, setImageLoading] = useState(true)
+
+  // Check if item is in wishlist
+  const isWishlisted = isItemInWishlist(product.id)
 
   const discount = product.comparePrice
     ? Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)
@@ -114,13 +118,7 @@ export default function ProductCard({
 
     } catch (err) {
       console.error(err)
-      toast.error('Failed to add item to cart', {
-        style: {
-          background: 'hsl(var(--destructive))',
-          color: 'hsl(var(--destructive-foreground))',
-          borderRadius: '12px',
-        }
-      })
+      toast.error('Failed to add item to cart')
     } finally {
       setIsLoading(false)
     }
@@ -140,19 +138,28 @@ export default function ProductCard({
       return
     }
 
-    setIsWishlisted(!isWishlisted)
-
-    toast.success(
-      isWishlisted ? 'Removed from wishlist' : 'Added to wishlist! 💝',
-      {
-        icon: isWishlisted ? '💔' : '❤️',
-        style: {
-          background: isWishlisted ? 'hsl(var(--muted))' : 'hsl(var(--primary))',
-          color: isWishlisted ? 'hsl(var(--muted-foreground))' : 'hsl(var(--primary-foreground))',
-          borderRadius: '12px',
+    if (isWishlisted) {
+      removeFromWishlist(product.id)
+    } else {
+      addToWishlist({
+        id: product.id,
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+        comparePrice: product.comparePrice,
+        image: product.images[0] || '/placeholder-product.jpg',
+        category: product.category,
+        availability: product.availability,
+        stock: product.stock,
+        isFeatured: product.isFeatured,
+        metadata: {
+          weight: product.weight,
+          origin: product.origin,
+          vendor: product.vendor,
+          shopId: product.shopId
         }
-      }
-    )
+      })
+    }
   }
 
   const handleImageError = () => {

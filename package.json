@@ -10,6 +10,18 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "tsx lib/seed/products.ts",
+    "db:clear": "node scripts/clear-db.js",
+    "db:clear:all": "node scripts/clear-db.js all",
+    "db:clear:users": "node scripts/clear-db.js users",
+    "db:clear:products": "node scripts/clear-db.js products",
+    "db:clear:orders": "node scripts/clear-db.js orders",
+    "db:clear:test": "node scripts/clear-db.js test",
+    "db:clear:sessions": "node scripts/clear-db.js sessions",
+    "db:reset": "node scripts/reset-db.js",
+    "db:reset:clean": "node scripts/reset-db.js clean",
+    "db:fix:phones": "node scripts/fix-phone-numbers.js",
+    "db:inspect": "node scripts/inspect-db.js",
+    "db:nuclear": "node scripts/nuclear-fix.js",
     "postinstall": "prisma generate"
   },
   "dependencies": {

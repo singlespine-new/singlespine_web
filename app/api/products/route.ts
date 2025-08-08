@@ -44,81 +44,79 @@ export async function GET(request: NextRequest) {
     }
 
     // Apply other filters
-    {
-      if (featured) {
-        filteredProducts = filteredProducts.filter(product => product.isFeatured)
-      }
+    if (featured) {
+      filteredProducts = filteredProducts.filter(product => product.isFeatured)
+    }
 
-      if (minPrice || maxPrice) {
-        filteredProducts = filteredProducts.filter(product => {
-          const price = product.price
-          if (minPrice && price < parseFloat(minPrice)) return false
-          if (maxPrice && price > parseFloat(maxPrice)) return false
-          return true
-        })
-      }
-
-      if (origin) {
-        filteredProducts = filteredProducts.filter(product => product.origin === origin)
-      }
-
-      if (vendor) {
-        filteredProducts = filteredProducts.filter(product => product.vendor === vendor)
-      }
-
-      if (availability) {
-        filteredProducts = filteredProducts.filter(product => product.availability === availability)
-      }
-
-      if (inStock) {
-        filteredProducts = filteredProducts.filter(product =>
-          product.availability === 'IN_STOCK' && product.stock > 0
-        )
-      }
-
-      // Apply sorting
-      filteredProducts.sort((a, b) => {
-        let comparison = 0
-
-        switch (sortBy) {
-          case 'price':
-            comparison = a.price - b.price
-            break
-          case 'name':
-            comparison = a.name.localeCompare(b.name)
-            break
-          case 'rating':
-            comparison = (a.rating || 0) - (b.rating || 0)
-            break
-          case 'stock':
-            comparison = a.stock - b.stock
-            break
-          case 'reviewCount':
-            comparison = (a.reviewCount || 0) - (b.reviewCount || 0)
-            break
-          case 'featured':
-            comparison = (a.isFeatured ? 1 : 0) - (b.isFeatured ? 1 : 0)
-            break
-          case 'createdAt':
-          default:
-            comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-            break
-        }
-
-        return sortOrder === 'desc' ? -comparison : comparison
-      })
-
-      // Apply pagination
-      const paginatedResult = paginateMockData(filteredProducts, page, limit)
-
-      return NextResponse.json({
-        success: true,
-        data: {
-          products: paginatedResult.items,
-          pagination: paginatedResult.pagination,
-        },
+    if (minPrice || maxPrice) {
+      filteredProducts = filteredProducts.filter(product => {
+        const price = product.price
+        if (minPrice && price < parseFloat(minPrice)) return false
+        if (maxPrice && price > parseFloat(maxPrice)) return false
+        return true
       })
     }
+
+    if (origin) {
+      filteredProducts = filteredProducts.filter(product => product.origin === origin)
+    }
+
+    if (vendor) {
+      filteredProducts = filteredProducts.filter(product => product.vendor === vendor)
+    }
+
+    if (availability) {
+      filteredProducts = filteredProducts.filter(product => product.availability === availability)
+    }
+
+    if (inStock) {
+      filteredProducts = filteredProducts.filter(product =>
+        product.availability === 'IN_STOCK' && product.stock > 0
+      )
+    }
+
+    // Apply sorting
+    filteredProducts.sort((a, b) => {
+      let comparison = 0
+
+      switch (sortBy) {
+        case 'price':
+          comparison = a.price - b.price
+          break
+        case 'name':
+          comparison = a.name.localeCompare(b.name)
+          break
+        case 'rating':
+          comparison = (a.rating || 0) - (b.rating || 0)
+          break
+        case 'stock':
+          comparison = a.stock - b.stock
+          break
+        case 'reviewCount':
+          comparison = (a.reviewCount || 0) - (b.reviewCount || 0)
+          break
+        case 'featured':
+          comparison = (a.isFeatured ? 1 : 0) - (b.isFeatured ? 1 : 0)
+          break
+        case 'createdAt':
+        default:
+          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          break
+      }
+
+      return sortOrder === 'desc' ? -comparison : comparison
+    })
+
+    // Apply pagination
+    const paginatedResult = paginateMockData(filteredProducts, page, limit)
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        products: paginatedResult.items,
+        pagination: paginatedResult.pagination,
+      },
+    })
   } catch (error) {
     console.error('Error fetching products:', error)
     return NextResponse.json(

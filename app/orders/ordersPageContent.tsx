@@ -27,7 +27,7 @@ import {
   ShoppingBag
 } from 'lucide-react'
 import Link from 'next/link'
-import toast from 'react-hot-toast'
+import toast from '@/components/ui/toast'
 import Image from 'next/image'
 import {
   DropdownMenu,
@@ -160,7 +160,7 @@ function OrdersPageContent() {
     if (success === 'true') {
       toast.success('Order placed successfully! 🎉', {
         duration: 5000,
-        icon: '🛍️'
+        icon: <CheckCircle className="w-5 h-5" />
       })
     }
   }, [success])
@@ -248,7 +248,7 @@ function OrdersPageContent() {
 
   const copyOrderNumber = (orderNumber: string) => {
     navigator.clipboard.writeText(orderNumber)
-    toast.success('Order number copied!', { icon: '📋' })
+    toast.success('Order number copied!', { icon: <Copy className="w-4 h-4" /> })
   }
 
   const filteredOrders = orders

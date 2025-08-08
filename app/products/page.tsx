@@ -7,9 +7,11 @@ import { SearchBar } from '@/components/ui/SearchBar'
 import ProductCard from '@/components/products/ProductCard'
 import ProductDetailsModal from '@/components/products/ProductDetailsModal'
 import { cn } from '@/lib/utils'
-import toast from 'react-hot-toast'
+import toast from '@/components/ui/toast'
 import { Product, PaginationInfo } from '@/types'
 import { CATEGORY_SELECT_OPTIONS, SORT_OPTIONS, ORIGIN_OPTIONS } from '@/constants'
+import { useCartStore } from '@/lib/store/cart'
+import { useAuth } from '@/lib/auth-utils'
 
 interface ProductsResponse {
   success: boolean
@@ -27,6 +29,8 @@ export default function ProductsPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [showProductModal, setShowProductModal] = useState(false)
+  const { addItem } = useCartStore()
+  const { isAuthenticated } = useAuth()
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('')
@@ -137,32 +141,46 @@ export default function ProductsPage() {
   }
 
   // Handle add to cart from modal
-  const handleAddToCart = async (productId: string, quantity: number = 1, variantId?: string) => {
+  const handleAddToCart = useCallback(async (productId: string, quantity: number = 1, variantId?: string) => {
     try {
-      const response = await fetch('/api/cart', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          productId,
-          variantId,
-          quantity
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to add to cart');
+      // Find the product to add
+      const product = products.find(p => p.id === productId)
+      if (!product) {
+        throw new Error('Product not found')
       }
 
-      return data;
+      // Find the variant if specified
+      const variant = variantId ? product.variants?.find(v => v.id === variantId) : undefined
+
+      // Add to cart store (this will handle both frontend and backend sync)
+      for (let i = 0; i < quantity; i++) {
+        addItem({
+          id: `${productId}-${variantId || 'default'}`,
+          productId,
+          variantId,
+          name: product.name,
+          price: variant?.price || product.price,
+          image: product.images[0] || '/placeholder-product.jpg',
+          maxQuantity: variant?.stock || product.stock,
+          variant: variant ? {
+            id: variant.id,
+            name: variant.name,
+            value: variant.value
+          } : undefined,
+          metadata: {
+            weight: product.weight,
+            origin: product.origin,
+            vendor: product.vendor
+          }
+        }, isAuthenticated)
+      }
+
+      return { success: true };
     } catch (error) {
       console.error('Error adding to cart:', error);
-      throw error;
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
-  }
+  }, [products, addItem, isAuthenticated])
 
   return (
     <div className="min-h-screen bg-background">
@@ -199,7 +217,7 @@ export default function ProductsPage() {
             "w-full lg:w-64 lg:flex-shrink-0 space-y-6",
             showFilters ? "block" : "hidden lg:block"
           )}>
-            <div className="bg-card border border-border/40 rounded-xl p-6 sticky top-6 overflow-hidden max-w-full">
+            <div className="bg-card border border-border/40 rounded-xl p-6 sticky top-20 overflow-hidden max-w-full">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-foreground">Filters</h3>
                 {activeFiltersCount > 0 && (

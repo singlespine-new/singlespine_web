@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { useCartStore, getEmptyCartMessage } from '@/lib/store/cart'
 import { formatCurrency } from '@/lib/stripe'
 import { cn } from '@/lib/utils'
-import toast from 'react-hot-toast'
+import toast from '@/components/ui/toast'
 import { CompactCheckoutButton } from '@/components/ui/CheckoutButton'
 import { useAuth } from '@/lib/auth-utils'
 
@@ -52,11 +52,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
 
     if (newQuantity > item.maxQuantity) {
       toast.error(`Sorry! Only ${item.maxQuantity} items available 😔`, {
-        icon: '📦',
-        style: {
-          background: '#FC8120',
-          color: 'white',
-        },
+        icon: '📦'
       })
       return
     }
@@ -69,11 +65,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
     if (item) {
       removeItem(itemId)
       toast.success(`${item.name} removed from your basket! 🗑️`, {
-        icon: '👋',
-        style: {
-          background: '#FC8120',
-          color: 'white',
-        },
+        icon: '👋'
       })
     }
   }
@@ -83,11 +75,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
 
     clearCart()
     toast.success('Your basket is now empty and ready for new treasures! 🧹', {
-      icon: '✨',
-      style: {
-        background: '#FC8120',
-        color: 'white',
-      },
+      icon: '✨'
     })
   }
 

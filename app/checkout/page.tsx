@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth, useRequireAuth, authStorage } from '@/lib/auth-utils'
+import { useAuth, useRequireAuth } from '@/lib/auth-utils'
 import { Button } from '@/components/ui/Button'
-import { ShoppingCart, Lock, CreditCard, MapPin, User, Phone, Mail } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { ShoppingCart, Lock, CreditCard, MapPin, User, CheckCircle, Phone, AlertCircle } from 'lucide-react'
+import toast from '@/components/ui/toast'
 import Link from 'next/link'
+import Image from 'next/image'
+import { useCartStore } from '@/lib/store/cart'
+import SmartPhonePrompt from '@/components/PhoneNumberPrompt/SmartPhonePrompt'
+import { useCheckoutPhonePrompt } from '@/components/PhoneNumberPrompt/usePhonePrompt'
 
 interface CartItem {
   id: string
@@ -34,11 +38,21 @@ export default function CheckoutPage() {
   const { isAuthenticated, isLoading } = useRequireAuth()
   const { user } = useAuth()
   const router = useRouter()
+  const { items, getTotalItems, getTotalPrice, getShippingCost, getFinalTotal, clearCart } = useCartStore()
 
-  const [cartItems, setCartItems] = useState<CartItem[]>([])
-  const [cartSummary, setCartSummary] = useState<CartSummary | null>(null)
-  const [loading, setLoading] = useState(true)
+  // Phone prompt hook
+  const {
+    isOpen: phonePromptOpen,
+    showPrompt: showPhonePromptModal,
+    hidePrompt: hidePhonePrompt,
+    savePhoneNumber,
+    needsPhoneNumber,
+    currentPhone,
+    userName
+  } = useCheckoutPhonePrompt()
+
   const [submitting, setSubmitting] = useState(false)
+  const [showPhoneRequired, setShowPhoneRequired] = useState(false)
 
   // Shipping Information
   const [shippingInfo, setShippingInfo] = useState({
@@ -51,12 +65,24 @@ export default function CheckoutPage() {
     additionalInfo: ''
   })
 
-  // Load cart data
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchCartData()
-    }
-  }, [isAuthenticated])
+  // Transform cart store items to local format
+  const cartItems: CartItem[] = items.map(item => ({
+    id: item.id,
+    productId: item.productId,
+    name: item.name,
+    price: item.price,
+    quantity: item.quantity,
+    image: item.image,
+    variant: item.variant
+  }))
+
+  const cartSummary: CartSummary = {
+    subtotal: getTotalPrice(),
+    shippingCost: getShippingCost(),
+    tax: getTotalPrice() * 0.125, // 12.5% VAT
+    total: getFinalTotal() + (getTotalPrice() * 0.125),
+    totalItems: getTotalItems()
+  }
 
   // Pre-fill user information
   useEffect(() => {
@@ -67,34 +93,46 @@ export default function CheckoutPage() {
         email: user.email || '',
         phone: user.phoneNumber || ''
       }))
-    }
-  }, [user])
 
-  const fetchCartData = async () => {
-    try {
-      setLoading(true)
-      const response = await fetch('/api/cart')
-      const data = await response.json()
-
-      if (data.success) {
-        setCartItems(data.data.items)
-        setCartSummary(data.data.summary)
-      } else {
-        toast.error('Failed to load cart')
+      // Show gentle alert if phone is missing
+      if (!user.phoneNumber && isAuthenticated) {
+        const timer = setTimeout(() => {
+          setShowPhoneRequired(true)
+        }, 1500)
+        return () => clearTimeout(timer)
       }
-    } catch (error) {
-      console.error('Error fetching cart:', error)
-      toast.error('Failed to load cart')
-    } finally {
-      setLoading(false)
     }
-  }
+  }, [user, isAuthenticated])
 
   const handleInputChange = (field: string, value: string) => {
     setShippingInfo(prev => ({
       ...prev,
       [field]: value
     }))
+
+    // Auto-save phone number to user profile when they type it
+    if (field === 'phone' && value && user && !user.phoneNumber && value.length >= 10) {
+      updateUserPhone(value)
+    }
+  }
+
+  const updateUserPhone = async (phone: string) => {
+    try {
+      const response = await fetch('/api/user/update-phone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone })
+      })
+
+      if (response.ok) {
+        toast.success('Phone number saved to your profile! 📱', {
+          duration: 3000,
+          icon: <CheckCircle className="w-4 h-4" />
+        })
+      }
+    } catch (error) {
+      console.warn('Failed to auto-save phone number:', error)
+    }
   }
 
   const validateForm = () => {
@@ -102,6 +140,11 @@ export default function CheckoutPage() {
     const missing = required.filter(field => !shippingInfo[field as keyof typeof shippingInfo].trim())
 
     if (missing.length > 0) {
+      // If phone is missing and user doesn't have one, show phone prompt
+      if (missing.includes('phone') && needsPhoneNumber) {
+        showPhonePromptModal('checkout')
+        return false
+      }
       toast.error(`Please fill in: ${missing.join(', ')}`)
       return false
     }
@@ -120,15 +163,25 @@ export default function CheckoutPage() {
     setSubmitting(true)
 
     try {
+      // Update user phone number if they filled it in checkout form and it's different
+      if (shippingInfo.phone && shippingInfo.phone !== currentPhone) {
+        try {
+          await savePhoneNumber(shippingInfo.phone)
+        } catch (error) {
+          console.warn('Failed to save phone number:', error)
+          // Continue with checkout even if phone save fails
+        }
+      }
+
       // In a real app, this would create an order
       await new Promise(resolve => setTimeout(resolve, 2000)) // Simulate API call
 
       // Clear cart after successful order
-      await fetch('/api/cart', { method: 'DELETE' })
+      await clearCart()
 
       toast.success('Order placed successfully! 🎉', {
         duration: 5000,
-        icon: '🛍️'
+        icon: <CheckCircle className="w-5 h-5" />
       })
 
       // Redirect to order confirmation or orders page
@@ -142,7 +195,7 @@ export default function CheckoutPage() {
   }
 
   // Show loading state
-  if (isLoading || loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -197,6 +250,41 @@ export default function CheckoutPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Shipping Information */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Phone Number Alert */}
+            {showPhoneRequired && needsPhoneNumber && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <h3 className="font-medium text-amber-800 mb-1">
+                      Phone Number Required
+                    </h3>
+                    <p className="text-sm text-amber-700 mb-3">
+                      We need your phone number to coordinate delivery with you and provide order updates.
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => showPhonePromptModal('checkout')}
+                        size="sm"
+                        className="bg-amber-600 hover:bg-amber-700 text-white"
+                      >
+                        <Phone className="w-4 h-4 mr-2" />
+                        Add Phone Number
+                      </Button>
+                      <Button
+                        onClick={() => setShowPhoneRequired(false)}
+                        size="sm"
+                        variant="ghost"
+                        className="text-amber-700 hover:text-amber-800"
+                      >
+                        I'll add it below
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* User Info */}
             <div className="bg-card border border-border rounded-xl p-6">
               <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
@@ -220,13 +308,24 @@ export default function CheckoutPage() {
                   <label className="block text-sm font-medium text-foreground mb-2">
                     Phone Number *
                   </label>
-                  <input
-                    type="tel"
-                    value={shippingInfo.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    className="w-full px-4 py-3 border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
-                    placeholder="0XXX XXX XXX"
-                  />
+                  <div className="relative">
+                    <input
+                      type="tel"
+                      value={shippingInfo.phone}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                      className="w-full px-4 py-3 border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
+                      placeholder="0XXX XXX XXX"
+                    />
+                    {needsPhoneNumber && (
+                      <button
+                        onClick={() => showPhonePromptModal('checkout')}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-primary hover:text-primary/80"
+                        title="Use phone prompt"
+                      >
+                        <Phone className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-foreground mb-2">
@@ -322,9 +421,11 @@ export default function CheckoutPage() {
               <div className="space-y-4">
                 {cartItems.map((item) => (
                   <div key={item.id} className="flex gap-3 p-3 bg-muted/30 rounded-lg">
-                    <img
+                    <Image
                       src={item.image}
                       alt={item.name}
+                      width={64}
+                      height={64}
                       className="w-16 h-16 object-cover rounded-lg"
                     />
                     <div className="flex-1 min-w-0">
@@ -406,6 +507,21 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+
+      {/* Smart Phone Prompt */}
+      <SmartPhonePrompt
+        isOpen={phonePromptOpen}
+        onClose={hidePhonePrompt}
+        onSave={async (phone: string) => {
+          await savePhoneNumber(phone)
+          // Update shipping info with the new phone number
+          setShippingInfo(prev => ({ ...prev, phone }))
+          setShowPhoneRequired(false)
+        }}
+        context="checkout"
+        currentPhone={currentPhone}
+        userName={userName}
+      />
     </div>
   )
 }

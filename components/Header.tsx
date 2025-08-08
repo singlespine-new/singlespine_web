@@ -16,6 +16,7 @@ import {
 import { Menu, ShoppingBag, Heart, User, LogOut, Package, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils'; // Import cn utility
 import { useCartStore } from '@/lib/store/cart';
+import { useWishlistStore } from '@/lib/store/wishlist';
 import { useAuth } from '@/lib/auth-utils';
 import { signOut } from 'next-auth/react';
 import {
@@ -31,12 +32,14 @@ const Header = () => {
   const [isOpen, setIsOpen] = React.useState(false);
   const pathname = usePathname(); // Get current pathname
   const { openCart, getTotalItems } = useCartStore();
+  const { openWishlist, getTotalItems: getWishlistTotal } = useWishlistStore();
   const { isAuthenticated, user, isLoading } = useAuth();
   const cartItemsCount = getTotalItems();
+  const wishlistItemsCount = getWishlistTotal();
 
   const navLinks = [
-    { label: 'Home', href: '/home' },
-    { label: 'Gifts', href: '/products' },
+    { label: 'Home', href: '/' },
+    { label: 'Products', href: '/products' },
     { label: 'How it Works', href: '/how-it-works' },
     // { label: 'About Us', href: '/about' },
   ];
@@ -84,8 +87,18 @@ const Header = () => {
         {/* Desktop Action Buttons */}
         <div className="hidden shrink-0 items-center gap-2 sm:gap-3 md:flex">
           {/* Wishlist Button */}
-          <Button variant="ghost" size="icon" className="relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative"
+            onClick={openWishlist}
+          >
             <Heart className="h-5 w-5" />
+            {wishlistItemsCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                {wishlistItemsCount > 99 ? '99+' : wishlistItemsCount}
+              </span>
+            )}
           </Button>
 
           {/* Cart Button */}
@@ -229,9 +242,19 @@ const Header = () => {
                       </span>
                     )}
                   </Button>
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 relative"
+                    onClick={openWishlist}
+                  >
                     <Heart className="h-4 w-4 mr-2" />
                     Wishlist
+                    {wishlistItemsCount > 0 && (
+                      <span className="ml-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                        {wishlistItemsCount > 99 ? '99+' : wishlistItemsCount}
+                      </span>
+                    )}
                   </Button>
                 </div>
 

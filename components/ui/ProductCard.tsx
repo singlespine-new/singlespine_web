@@ -6,6 +6,9 @@ import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { Product } from '@/types'
 import ProductDetailsModal from "@/components/products/ProductDetailsModal"
+import { useCartStore } from '@/lib/store/cart'
+import { useAuth } from '@/lib/auth-utils'
+import toast from '@/components/ui/toast'
 
 interface ProductCardProps {
   product: Product
@@ -24,6 +27,8 @@ const ProductCard = ({
 }: ProductCardProps) => {
   const [showModal, setShowModal] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const { addItem } = useCartStore()
+  const { isAuthenticated } = useAuth()
 
   const handleCardClick = () => {
     if (onClick) {
@@ -38,9 +43,23 @@ const ProductCard = ({
     setIsLoading(true)
 
     try {
-      await handleAddToCart(product.id, 1)
+      // Add to cart store (this will handle both frontend and backend sync)
+      await addItem({
+        id: `${product.id}-default`,
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+        image: product.images[0] || '/placeholder-product.jpg',
+        maxQuantity: product.stock,
+        metadata: {
+          weight: product.weight,
+          origin: product.origin,
+          vendor: product.vendor
+        }
+      }, isAuthenticated)
     } catch (error) {
       console.error('Error adding to cart:', error)
+      toast.error('Failed to add item to cart')
     } finally {
       setIsLoading(false)
     }
@@ -48,25 +67,31 @@ const ProductCard = ({
 
   const handleAddToCart = async (productId: string, quantity: number = 1, variantId?: string) => {
     try {
-      const response = await fetch('/api/cart', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          productId,
-          variantId,
-          quantity
-        }),
-      })
+      // Find the variant if specified
+      const variant = variantId ? product.variants?.find(v => v.id === variantId) : undefined
 
-      const data = await response.json()
+      // Add to cart store (this will handle both frontend and backend sync)
+      await addItem({
+        id: `${productId}-${variantId || 'default'}`,
+        productId,
+        variantId,
+        name: product.name,
+        price: variant?.price || product.price,
+        image: product.images[0] || '/placeholder-product.jpg',
+        maxQuantity: variant?.stock || product.stock,
+        variant: variant ? {
+          id: variant.id,
+          name: variant.name,
+          value: variant.value
+        } : undefined,
+        metadata: {
+          weight: product.weight,
+          origin: product.origin,
+          vendor: product.vendor
+        }
+      }, isAuthenticated)
 
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to add to cart')
-      }
-
-      return data
+      return { success: true }
     } catch (error) {
       console.error('Error adding to cart:', error)
       throw error

@@ -1,5 +1,5 @@
+import toast from '@/components/ui/toast'
 import { triggerAuth } from '@/lib/auth-utils'
-import toast from 'react-hot-toast'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
@@ -41,7 +41,7 @@ interface CartStore {
   shippingInfo: ShippingInfo | null
 
   // Cart actions
-  addItem: (item: Omit<CartItem, 'quantity'>, isAuthenticated?: boolean) => void
+  addItem: (item: Omit<CartItem, 'quantity'>, isAuthenticated?: boolean, quantity?: number) => void
   removeItem: (itemId: string) => void
   updateQuantity: (itemId: string, quantity: number) => void
   clearCart: () => void
@@ -73,7 +73,7 @@ export const useCartStore = create<CartStore>()(
       isOpen: false,
       shippingInfo: null,
 
-      addItem: (newItem, isAuthenticated = true) => {
+      addItem: async (newItem, _isAuthenticated = true, addQuantity = 1) => {
         const state = get()
         const existingItemIndex = state.items.findIndex(
           item => item.productId === newItem.productId &&
@@ -83,13 +83,14 @@ export const useCartStore = create<CartStore>()(
         if (existingItemIndex > -1) {
           // Item exists, update quantity
           const existingItem = state.items[existingItemIndex]
-          const newQuantity = existingItem.quantity + 1
+          const newQuantity = existingItem.quantity + addQuantity
 
           if (newQuantity > existingItem.maxQuantity) {
             toast.error(`Only ${existingItem.maxQuantity} items available for ${existingItem.name}`)
             return
           }
 
+          // Update frontend state first
           set(state => ({
             items: state.items.map((item, index) =>
               index === existingItemIndex
@@ -98,51 +99,90 @@ export const useCartStore = create<CartStore>()(
             )
           }))
 
-          toast.success(`${existingItem.name} quantity updated in your cart! 🛒`, {
-            icon: '🎁',
-            style: {
-              background: '#FC8120',
-              color: 'white',
-            },
-          })
+          // Sync with backend
+          try {
+            await fetch('/api/cart', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                productId: newItem.productId,
+                variantId: newItem.variantId,
+                quantity: addQuantity
+              }),
+            })
+          } catch (error) {
+            console.warn('Failed to sync cart with backend:', error)
+          }
+
+          toast.success(`${existingItem.name} quantity updated in your cart!`)
         } else {
           // New item
           const cartItem: CartItem = {
             ...newItem,
-            quantity: 1,
+            quantity: addQuantity,
             id: `${newItem.productId}-${newItem.variantId || 'default'}`
           }
 
+          // Update frontend state first
           set(state => ({
             items: [...state.items, cartItem]
           }))
 
-          toast.success(`${newItem.name} added to your cart! 🎉`, {
-            icon: '🎁',
-            style: {
-              background: '#FC8120',
-              color: 'white',
-            },
-          })
+          // Sync with backend
+          try {
+            await fetch('/api/cart', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                productId: newItem.productId,
+                variantId: newItem.variantId,
+                quantity: addQuantity
+              }),
+            })
+          } catch (error) {
+            console.warn('Failed to sync cart with backend:', error)
+          }
+
+          // toast.success(`${newItem.name} added to your cart! 🎉`, {
+          //   icon: '🎁',
+          //   style: {
+          //     background: '#FC8120',
+          //     color: 'white',
+          //   },
+          // })
         }
       },
 
-      removeItem: (itemId) => {
+      removeItem: async (itemId) => {
         const state = get()
         const item = state.items.find(item => item.id === itemId)
 
+        // Update frontend state first
         set(state => ({
           items: state.items.filter(item => item.id !== itemId)
         }))
 
+        // Sync with backend
         if (item) {
-          toast.success(`${item.name} removed from cart`, {
-            icon: '🗑️',
-          })
+          try {
+            await fetch(`/api/cart?itemId=${itemId}`, {
+              method: 'DELETE',
+            })
+          } catch (error) {
+            console.warn('Failed to sync cart removal with backend:', error)
+          }
+
+          // toast.success(`${item.name} removed from cart`, {
+          //   icon: '🗑️',
+          // })
         }
       },
 
-      updateQuantity: (itemId, quantity) => {
+      updateQuantity: async (itemId, quantity) => {
         if (quantity <= 0) {
           get().removeItem(itemId)
           return
@@ -158,6 +198,7 @@ export const useCartStore = create<CartStore>()(
           return
         }
 
+        // Update frontend state first
         set(state => ({
           items: state.items.map(item =>
             item.id === itemId
@@ -165,13 +206,38 @@ export const useCartStore = create<CartStore>()(
               : item
           )
         }))
+
+        // Sync with backend
+        try {
+          await fetch('/api/cart', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              itemId,
+              quantity
+            }),
+          })
+        } catch (error) {
+          console.warn('Failed to sync cart update with backend:', error)
+        }
       },
 
-      clearCart: () => {
+      clearCart: async () => {
+        // Update frontend state first
         set({ items: [] })
-        toast.success('Cart cleared! 🧹', {
-          icon: '🛒',
-        })
+
+        // Sync with backend
+        try {
+          await fetch('/api/cart', {
+            method: 'DELETE',
+          })
+        } catch (error) {
+          console.warn('Failed to sync cart clear with backend:', error)
+        }
+
+        toast.success('Cart cleared!')
       },
 
       openCart: () => set({ isOpen: true }),
@@ -242,9 +308,7 @@ export const useCartStore = create<CartStore>()(
         const state = get()
 
         if (state.items.length === 0) {
-          toast.error('Your cart is empty! Add some items first.', {
-            icon: '🛒'
-          })
+          toast.error('Your cart is empty! Add some items first.')
           return
         }
 

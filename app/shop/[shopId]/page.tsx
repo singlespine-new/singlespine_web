@@ -8,10 +8,12 @@ import { SearchBar } from '@/components/ui/SearchBar'
 import ProductCard from '@/components/products/ProductCard'
 import ProductDetailsModal from '@/components/products/ProductDetailsModal'
 import { cn } from '@/lib/utils'
-import toast from 'react-hot-toast'
+import toast from '@/components/ui/toast'
 import Image from 'next/image'
 import { Shop, Product } from '@/types'
 import { SHOP_SORT_OPTIONS } from '@/constants'
+import { useCartStore } from '@/lib/store/cart'
+import { useAuth } from '@/lib/auth-utils'
 
 // Types imported from @/types
 
@@ -40,6 +42,8 @@ export default function ShopPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [showProductModal, setShowProductModal] = useState(false)
+  const { addItem } = useCartStore()
+  const { isAuthenticated } = useAuth()
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('')
@@ -133,25 +137,39 @@ export default function ShopPage() {
 
   const handleAddToCart = async (productId: string, quantity: number = 1, variantId?: string) => {
     try {
-      const response = await fetch('/api/cart', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          productId,
-          variantId,
-          quantity
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to add to cart');
+      // Find the product to add
+      const product = products.find(p => p.id === productId)
+      if (!product) {
+        throw new Error('Product not found')
       }
 
-      return data;
+      // Find the variant if specified
+      const variant = variantId ? product.variants?.find(v => v.id === variantId) : undefined
+
+      // Add to cart store (this will handle both frontend and backend sync)
+      for (let i = 0; i < quantity; i++) {
+        await addItem({
+          id: `${productId}-${variantId || 'default'}`,
+          productId,
+          variantId,
+          name: product.name,
+          price: variant?.price || product.price,
+          image: product.images[0] || '/placeholder-product.jpg',
+          maxQuantity: variant?.stock || product.stock,
+          variant: variant ? {
+            id: variant.id,
+            name: variant.name,
+            value: variant.value
+          } : undefined,
+          metadata: {
+            weight: product.weight,
+            origin: product.origin,
+            vendor: product.vendor
+          }
+        }, isAuthenticated)
+      }
+
+      return { success: true };
     } catch (error) {
       console.error('Error adding to cart:', error);
       throw error;

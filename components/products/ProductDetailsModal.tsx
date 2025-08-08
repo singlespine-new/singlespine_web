@@ -6,9 +6,12 @@ import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 import Link from 'next/link'
-import toast from 'react-hot-toast'
+import toast from '@/components/ui/toast'
 import { Product, ProductVariant } from '@/types'
 import { getMockShopById } from '@/data/mockData'
+import { useCartStore } from '@/lib/store/cart'
+import { useWishlistStore } from '@/lib/store/wishlist'
+import { useAuth } from '@/lib/auth-utils'
 
 interface ProductDetailsModalProps {
   product: Product | null
@@ -23,11 +26,16 @@ export default function ProductDetailsModal({
   onClose,
   onAddToCart
 }: ProductDetailsModalProps) {
+  const { addItem } = useCartStore()
+  const { addItem: addToWishlist, removeItem: removeFromWishlist, isItemInWishlist } = useWishlistStore()
+  const { isAuthenticated } = useAuth()
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null)
   const [quantity, setQuantity] = useState(1)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [isAddingToCart, setIsAddingToCart] = useState(false)
-  const [isFavorited, setIsFavorited] = useState(false)
+
+  // Check if item is in wishlist
+  const isFavorited = product ? isItemInWishlist(product.id, selectedVariant?.id) : false
 
   // Get delivery time from shop data
   const getDeliveryTime = () => {
@@ -46,6 +54,14 @@ export default function ProductDetailsModal({
       setSelectedImageIndex(0)
     }
   }, [product])
+
+  // Sync wishlist with backend when component mounts
+  useEffect(() => {
+    if (isAuthenticated) {
+      const { syncWithBackend } = useWishlistStore.getState()
+      syncWithBackend()
+    }
+  }, [isAuthenticated])
 
   // Handle escape key
   useEffect(() => {
@@ -79,19 +95,82 @@ export default function ProductDetailsModal({
   }
 
   const handleAddToCart = async () => {
-    if (!onAddToCart) {
-      toast.error('Add to cart functionality not available')
-      return
-    }
+    if (!product) return
 
     setIsAddingToCart(true)
     try {
-      await onAddToCart(product.id, quantity, selectedVariant?.id)
-      toast.success(`${product.name} added to cart! 🛒`)
-    } catch {
-      toast.error('Failed to add item to cart')
+      // Add to cart store (this handles both frontend and backend sync)
+      await addItem({
+        id: `${product.id}-${selectedVariant?.id || 'default'}`,
+        productId: product.id,
+        variantId: selectedVariant?.id,
+        name: product.name,
+        price: selectedVariant?.price || product.price,
+        image: product.images[0] || '/placeholder-product.jpg',
+        maxQuantity: selectedVariant?.stock || product.stock,
+        variant: selectedVariant ? {
+          id: selectedVariant.id,
+          name: selectedVariant.name,
+          value: selectedVariant.value
+        } : undefined,
+        metadata: {
+          weight: product.weight,
+          origin: product.origin,
+          vendor: product.vendor
+        }
+      }, isAuthenticated, quantity)
+
+      // onAddToCart prop removed to prevent duplicate cart additions
+      // The cart store already handles the addition above
+
+      // Show success toast
+      const itemText = quantity === 1 ? 'item' : 'items'
+      toast.success(`${quantity} ${itemText} added to your cart!`, {
+        icon: <ShoppingCart className="w-5 h-5" />
+      })
+    } catch (error) {
+      console.error('Failed to add to cart:', error)
+      toast.error('Failed to add to cart')
     } finally {
       setIsAddingToCart(false)
+    }
+  }
+
+  const handleWishlistToggle = () => {
+    if (!product) return
+
+    if (!isAuthenticated) {
+      toast.error('Please sign in to add items to your wishlist')
+      return
+    }
+
+    if (isFavorited) {
+      removeFromWishlist(product.id, selectedVariant?.id)
+    } else {
+      addToWishlist({
+        id: `${product.id}-${selectedVariant?.id || 'default'}`,
+        productId: product.id,
+        variantId: selectedVariant?.id,
+        name: product.name,
+        price: selectedVariant?.price || product.price,
+        comparePrice: product.comparePrice,
+        image: product.images[0] || '/placeholder-product.jpg',
+        category: product.category,
+        availability: product.availability,
+        stock: selectedVariant?.stock || product.stock,
+        isFeatured: product.isFeatured,
+        variant: selectedVariant ? {
+          id: selectedVariant.id,
+          name: selectedVariant.name,
+          value: selectedVariant.value
+        } : undefined,
+        metadata: {
+          weight: product.weight,
+          origin: product.origin,
+          vendor: product.vendor,
+          shopId: product.shopId
+        }
+      })
     }
   }
 
@@ -143,18 +222,22 @@ export default function ProductDetailsModal({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setIsFavorited(!isFavorited)}
-              className="p-2"
+              onClick={handleWishlistToggle}
+              className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-all duration-200"
+              title={isFavorited ? "Remove from wishlist" : "Add to wishlist"}
             >
-              <Heart className={cn("w-4 h-4", isFavorited && "fill-red-500 text-red-500")} />
+              <Heart className={cn("w-5 h-5 transition-colors", isFavorited ? "fill-red-500 text-red-500" : "text-gray-500 hover:text-red-500")} />
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className="p-2"
+              className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-all duration-200 hover:scale-105 border border-transparent hover:border-red-200 dark:hover:border-red-800 min-w-[32px] min-h-[32px] flex items-center justify-center"
+              aria-label="Close modal"
+              title="Close"
             >
-              <X className="w-4 h-4" />
+              <X className="w-6 h-6 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" />
+              <span className="sr-only">✕</span>
             </Button>
           </div>
         </div>
