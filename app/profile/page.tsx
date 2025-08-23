@@ -276,7 +276,7 @@ export default function ProfilePage() {
   }
 
   const handleDeleteAddress = async (id: string) => {
-    const confirm = window.confirm('Delete this address? This cannot be undone.')
+    const confirm = window.confirm('Delete this address? Note: Addresses that have been used in orders cannot be deleted to preserve order history.')
     if (!confirm) return
     try {
       const res = await fetch(`/api/user/addresses/${id}`, { method: 'DELETE' })
@@ -285,7 +285,13 @@ export default function ProfilePage() {
         toast.success('Address deleted')
       } else {
         const data = await res.json()
-        toast.error(data?.message || 'Failed to delete address')
+
+        // Handle specific error for addresses used in orders
+        if (data?.error === 'ADDRESS_IN_USE') {
+          toast.error('Cannot delete this address because it has been used in your orders. Your order history needs this address information.')
+        } else {
+          toast.error(data?.message || 'Failed to delete address')
+        }
       }
     } catch {
       toast.error('Failed to delete address')

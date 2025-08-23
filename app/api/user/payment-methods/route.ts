@@ -142,11 +142,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate payment method type
-    const validTypes = ['CARD', 'MOBILE_MONEY', 'BANK_TRANSFER', 'CASH_ON_DELIVERY']
-    if (!validTypes.includes(type)) {
+    // Validate and normalize payment method type
+    const typeMapping: Record<string, string> = {
+      'card': 'CARD',
+      'CARD': 'CARD',
+      'mobile_money': 'MOBILE_MONEY',
+      'MOBILE_MONEY': 'MOBILE_MONEY',
+      'bank_transfer': 'BANK_TRANSFER',
+      'BANK_TRANSFER': 'BANK_TRANSFER',
+      'cash_on_delivery': 'CASH_ON_DELIVERY',
+      'CASH_ON_DELIVERY': 'CASH_ON_DELIVERY'
+    }
+
+    const normalizedType = typeMapping[type]
+    if (!normalizedType) {
       return NextResponse.json(
-        { message: 'Invalid payment method type' },
+        { message: 'Invalid payment method type. Supported types: card, mobile_money, bank_transfer, cash_on_delivery' },
         { status: 400 }
       )
     }
@@ -167,7 +178,7 @@ export async function POST(request: NextRequest) {
     // Prepare payment method data based on type
     const paymentMethodData: any = {
       userId: user.id,
-      type: type,
+      type: normalizedType,
       isDefault: isDefault || false,
       nickname: nickname || null,
       provider: details.provider || null,
@@ -179,7 +190,7 @@ export async function POST(request: NextRequest) {
     let displayName = ''
 
     // Handle different payment method types
-    switch (type) {
+    switch (normalizedType) {
       case 'CARD':
         if (!details.cardNumber || !details.expiryMonth || !details.expiryYear || !details.cvv) {
           return NextResponse.json(
@@ -191,7 +202,7 @@ export async function POST(request: NextRequest) {
         // In production, you would tokenize the card with Stripe/PayStack here
         // For now, we'll store minimal safe details
         paymentMethodData.cardLast4 = details.cardNumber.slice(-4)
-        paymentMethodData.cardBrand = details.cardBrand || 'Unknown'
+        paymentMethodData.cardBrand = details.brand || 'Unknown'
         paymentMethodData.cardExpiryMonth = parseInt(details.expiryMonth)
         paymentMethodData.cardExpiryYear = parseInt(details.expiryYear)
         paymentMethodData.expiresAt = new Date(
@@ -204,7 +215,7 @@ export async function POST(request: NextRequest) {
         break
 
       case 'MOBILE_MONEY':
-        if (!details.provider || !details.phoneNumber) {
+        if (!details.provider || !details.mobileNumber) {
           return NextResponse.json(
             { message: 'Mobile money details are incomplete' },
             { status: 400 }
@@ -212,13 +223,13 @@ export async function POST(request: NextRequest) {
         }
 
         paymentMethodData.momoProvider = details.provider
-        paymentMethodData.momoNumber = details.phoneNumber
+        paymentMethodData.momoNumber = details.mobileNumber
 
-        displayName = `${details.provider} Mobile Money (${details.phoneNumber})`
+        displayName = `${details.provider} Mobile Money (${details.mobileNumber})`
         break
 
       case 'BANK_TRANSFER':
-        if (!details.bankName || !details.accountNumber || !details.accountHolderName) {
+        if (!details.bankName || !details.accountNumber || !details.accountName) {
           return NextResponse.json(
             { message: 'Bank transfer details are incomplete' },
             { status: 400 }
@@ -227,9 +238,9 @@ export async function POST(request: NextRequest) {
 
         paymentMethodData.bankName = details.bankName
         paymentMethodData.accountNumber = details.accountNumber // In production, encrypt this
-        paymentMethodData.accountHolderName = details.accountHolderName
+        paymentMethodData.accountHolderName = details.accountName
 
-        displayName = `${details.bankName} (${details.accountHolderName})`
+        displayName = `${details.bankName} (${details.accountName})`
         break
 
       case 'CASH_ON_DELIVERY':

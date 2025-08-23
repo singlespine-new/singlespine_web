@@ -203,6 +203,22 @@ export async function DELETE(_req: Request, context: { params: Promise<{ id: str
       return NextResponse.json({ message: 'Address not found' }, { status: 404 })
     }
 
+    // Check if this address is used in any orders
+    const ordersUsingAddress = await prisma.order.findFirst({
+      where: { addressId: id },
+    })
+
+    if (ordersUsingAddress) {
+      // Cannot delete address that has been used in orders
+      // Instead, we can mark it as inactive or return an error
+      return NextResponse.json({
+        message: 'Cannot delete address that has been used in orders. This address is referenced in your order history.',
+        error: 'ADDRESS_IN_USE',
+        canDelete: false
+      }, { status: 400 })
+    }
+
+    // If no orders reference this address, safe to delete
     await prisma.address.delete({
       where: { id },
     })
@@ -210,6 +226,16 @@ export async function DELETE(_req: Request, context: { params: Promise<{ id: str
     return new NextResponse(null, { status: 204 })
   } catch (err) {
     console.error('DELETE /api/user/addresses/[id] error:', err)
+
+    // Check if this is a foreign key constraint error
+    if (err instanceof Error && err.message.includes('relation') && err.message.includes('AddressToOrder')) {
+      return NextResponse.json({
+        message: 'Cannot delete address that has been used in orders. This address is referenced in your order history.',
+        error: 'ADDRESS_IN_USE',
+        canDelete: false
+      }, { status: 400 })
+    }
+
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
   }
 }

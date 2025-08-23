@@ -49,9 +49,18 @@ interface RecipientInfo {
 
 interface PaymentMethod {
   id: string
-  type: 'card' | 'mobile_money' | 'bank_transfer'
-  details: any
+  type: 'CARD' | 'MOBILE_MONEY' | 'BANK_TRANSFER' | 'CASH_ON_DELIVERY'
+  displayName: string
+  nickname?: string
   isDefault: boolean
+  cardLast4?: string
+  cardBrand?: string
+  cardExpiryMonth?: number
+  cardExpiryYear?: number
+  momoProvider?: string
+  bankName?: string
+  accountHolderName?: string
+  createdAt: string
 }
 
 export default function CheckoutPage() {

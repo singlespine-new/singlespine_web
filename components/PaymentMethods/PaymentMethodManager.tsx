@@ -2,25 +2,23 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/Button'
-import { CreditCard, Plus, Trash2, Shield, Smartphone, Building2, CheckCircle, AlertCircle, Edit3 } from 'lucide-react'
+import { CreditCard, Plus, Trash2, Shield, Smartphone, Building2, Building, Banknote, CheckCircle, AlertCircle, Edit3 } from 'lucide-react'
 import toast from '@/components/ui/toast'
 
 interface PaymentMethod {
   id: string
-  type: 'card' | 'mobile_money' | 'bank_transfer'
-  details: {
-    cardNumber?: string
-    expiryMonth?: string
-    expiryYear?: string
-    cardholderName?: string
-    brand?: string
-    mobileNumber?: string
-    provider?: string
-    bankName?: string
-    accountNumber?: string
-    accountName?: string
-  }
+  type: 'CARD' | 'MOBILE_MONEY' | 'BANK_TRANSFER' | 'CASH_ON_DELIVERY'
+  displayName: string
+  nickname?: string
   isDefault: boolean
+  cardLast4?: string
+  cardBrand?: string
+  cardExpiryMonth?: number
+  cardExpiryYear?: number
+  momoProvider?: string
+  bankName?: string
+  accountHolderName?: string
+  createdAt: string
 }
 
 interface PaymentMethodManagerProps {
@@ -94,38 +92,39 @@ export default function PaymentMethodManager({
 
   const getPaymentMethodIcon = (type: string) => {
     switch (type) {
-      case 'card':
+      case 'CARD':
         return <CreditCard className="w-5 h-5" />
-      case 'mobile_money':
+      case 'MOBILE_MONEY':
         return <Smartphone className="w-5 h-5" />
-      case 'bank_transfer':
-        return <Building2 className="w-5 h-5" />
+      case 'BANK_TRANSFER':
+        return <Building className="w-5 h-5" />
+      case 'CASH_ON_DELIVERY':
+        return <Banknote className="w-5 h-5" />
       default:
         return <CreditCard className="w-5 h-5" />
     }
   }
 
   const getPaymentMethodTitle = (paymentMethod: PaymentMethod) => {
-    switch (paymentMethod.type) {
-      case 'card':
-        return `${paymentMethod.details.brand || 'Card'} ending in ${paymentMethod.details.cardNumber?.slice(-4) || '****'}`
-      case 'mobile_money':
-        return `${paymentMethod.details.provider || 'Mobile Money'} - ${paymentMethod.details.mobileNumber || ''}`
-      case 'bank_transfer':
-        return `${paymentMethod.details.bankName || 'Bank'} - ${paymentMethod.details.accountNumber?.slice(-4) || '****'}`
-      default:
-        return 'Payment Method'
-    }
+    return paymentMethod.displayName || 'Payment Method'
   }
 
   const getPaymentMethodSubtitle = (paymentMethod: PaymentMethod) => {
+    if (paymentMethod.nickname) {
+      return paymentMethod.nickname
+    }
+
     switch (paymentMethod.type) {
-      case 'card':
-        return paymentMethod.details.cardholderName || 'Card holder'
-      case 'mobile_money':
-        return 'Mobile Money'
-      case 'bank_transfer':
-        return paymentMethod.details.accountName || 'Account holder'
+      case 'CARD':
+        return paymentMethod.cardExpiryMonth && paymentMethod.cardExpiryYear
+          ? `Expires ${paymentMethod.cardExpiryMonth.toString().padStart(2, '0')}/${paymentMethod.cardExpiryYear}`
+          : 'Credit/Debit Card'
+      case 'MOBILE_MONEY':
+        return paymentMethod.momoProvider || 'Mobile Money'
+      case 'BANK_TRANSFER':
+        return paymentMethod.accountHolderName || 'Bank Transfer'
+      case 'CASH_ON_DELIVERY':
+        return 'Pay when you receive your order'
       default:
         return ''
     }
@@ -153,15 +152,16 @@ export default function PaymentMethodManager({
               key={paymentMethod.id}
               onClick={() => handlePaymentMethodSelect(paymentMethod)}
               className={`p-4 border-2 rounded-xl cursor-pointer transition-all hover:shadow-md ${selectedMethod === paymentMethod.id
-                  ? 'border-primary bg-primary/5 shadow-sm'
-                  : 'border-border/30 hover:border-border/60'
+                ? 'border-primary bg-primary/5 shadow-sm'
+                : 'border-border/30 hover:border-border/60'
                 }`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${paymentMethod.type === 'card' ? 'bg-blue-50 text-blue-600' :
-                      paymentMethod.type === 'mobile_money' ? 'bg-green-50 text-green-600' :
-                        'bg-purple-50 text-purple-600'
+                  <div className={`p-2 rounded-lg ${paymentMethod.type === 'CARD' ? 'bg-blue-50 text-blue-600' :
+                    paymentMethod.type === 'MOBILE_MONEY' ? 'bg-green-50 text-green-600' :
+                      paymentMethod.type === 'BANK_TRANSFER' ? 'bg-purple-50 text-purple-600' :
+                        'bg-orange-50 text-orange-600'
                     }`}>
                     {getPaymentMethodIcon(paymentMethod.type)}
                   </div>
@@ -381,8 +381,8 @@ function AddPaymentMethodForm({ onClose, onSuccess }: AddPaymentMethodFormProps)
                   type="button"
                   onClick={() => setSelectedType(type as any)}
                   className={`p-3 border-2 rounded-xl text-center transition-all ${selectedType === type
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border/30 hover:border-border/60'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border/30 hover:border-border/60'
                     }`}
                 >
                   <Icon className="w-5 h-5 mx-auto mb-1" />
