@@ -8,7 +8,7 @@ export const runtime = 'nodejs'
 // GET - Fetch individual order details
 export async function GET(
   request: NextRequest,
-  context: { params: { orderId: string } }
+  context: { params: Promise<{ orderId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -151,7 +151,7 @@ export async function GET(
 // PUT - Update order (for order modifications, cancellations, etc.)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { orderId: string } }
+  context: { params: Promise<{ orderId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -163,7 +163,7 @@ export async function PUT(
       )
     }
 
-    const { orderId } = params
+    const { orderId } = await context.params
     const body = await request.json()
     const { action, data } = body
 

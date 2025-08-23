@@ -64,14 +64,14 @@ async function getCurrentUser() {
   return user
 }
 
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
+export async function POST(_req: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser()
     if (!user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
-    const id = params?.id
+    const { id } = await context.params
     if (!requiredString(id)) {
       return NextResponse.json({ message: 'Invalid address id' }, { status: 400 })
     }

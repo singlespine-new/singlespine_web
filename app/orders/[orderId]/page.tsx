@@ -10,6 +10,7 @@ import Link from 'next/link'
 
 interface Order {
   id: string
+  orderNumber: string
   status: string
   paymentStatus: string
   total: number
