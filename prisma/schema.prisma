@@ -28,12 +28,13 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   // Relations
-  accounts  Account[]
-  sessions  Session[]
-  orders    Order[]
-  cart      CartItem[]
-  addresses Address[]
-  wishlist  Wishlist[]
+  accounts       Account[]
+  sessions       Session[]
+  orders         Order[]
+  cart           CartItem[]
+  addresses      Address[]
+  wishlist       Wishlist[]
+  paymentMethods PaymentMethod[]
 
   @@map("users")
 }
@@ -98,6 +99,43 @@ model Address {
   orders Order[]
 
   @@map("addresses")
+}
+
+// Payment Method model
+model PaymentMethod {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String            @db.ObjectId
+  type          PaymentMethodType
+  provider      String? // stripe, paystack, momo, etc.
+
+  // Card details (encrypted/tokenized)
+  cardLast4       String?
+  cardBrand       String?
+  cardExpiryMonth Int?
+  cardExpiryYear  Int?
+
+  // Mobile Money details
+  momoProvider String? // MTN, Vodafone, AirtelTigo
+  momoNumber   String?
+
+  // Bank Transfer details
+  bankName          String?
+  accountNumber     String?
+  accountHolderName String?
+
+  // Metadata
+  displayName String // e.g., "Visa ending in 1234", "MTN Mobile Money"
+  nickname    String?
+  isDefault   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  expiresAt   DateTime? // For cards
+  metadata    Json? // Additional metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("payment_methods")
 }
 
 // Wishlist model
@@ -258,6 +296,15 @@ enum UserRole {
   USER
   ADMIN
   VENDOR
+}
+
+enum PaymentMethodType {
+  CARD
+  MOBILE_MONEY
+  BANK_TRANSFER
+  CASH_ON_DELIVERY
+  PAYPAL
+  STRIPE
 }
 
 enum ProductAvailability {
