@@ -28,7 +28,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!recipient || !recipient.fullName || !recipient.phone || !recipient.address) {
+    // Handle both old and new field names for recipient
+    const recipientName = recipient?.fullName || recipient?.recipientName
+    const recipientPhone = recipient?.phone
+    const recipientAddress = recipient?.address || recipient?.addressLine
+
+    console.log('Recipient validation:', {
+      received: recipient,
+      extracted: { recipientName, recipientPhone, recipientAddress }
+    })
+
+    if (!recipient || !recipientName || !recipientPhone || !recipientAddress) {
+      console.log('Recipient validation failed:', {
+        hasRecipient: !!recipient,
+        hasName: !!recipientName,
+        hasPhone: !!recipientPhone,
+        hasAddress: !!recipientAddress
+      })
       return NextResponse.json(
         { message: 'Recipient information is required' },
         { status: 400 }
@@ -74,12 +90,12 @@ export async function POST(request: NextRequest) {
     const orderNumber = `ORD-${timestamp}-${randomCode}`
 
     // Create or find recipient address
-    const recipientAddress = await prisma.address.create({
+    const recipientAddressRecord = await prisma.address.create({
       data: {
         userId: user.id,
-        name: recipient.fullName,
-        phone: recipient.phone,
-        streetAddress: recipient.address,
+        name: recipientName,
+        phone: recipientPhone,
+        streetAddress: recipientAddress,
         city: recipient.city,
         region: recipient.region,
         landmark: recipient.landmark || null,
@@ -101,7 +117,7 @@ export async function POST(request: NextRequest) {
       data: {
         orderNumber,
         userId: user.id,
-        addressId: recipientAddress.id,
+        addressId: recipientAddressRecord.id,
         status: 'PENDING',
         paymentStatus: 'PENDING',
         paymentMethod: paymentMethod.type,
