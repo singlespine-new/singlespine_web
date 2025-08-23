@@ -36,10 +36,10 @@ interface CartSummary {
 }
 
 interface RecipientInfo {
-  fullName: string
+  recipientName: string
   phone: string
   alternatePhone: string
-  address: string
+  addressLine: string
   city: string
   region: string
   landmark: string
@@ -84,7 +84,7 @@ export default function CheckoutPage() {
   const [showPhoneRequired, setShowPhoneRequired] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [deliveryOption, setDeliveryOption] = useState<'standard' | 'express'>('standard')
-  const [savedAddresses, setSavedAddresses] = useState<Array<{ id: string, label: string, fullName: string, phone: string, address: string, city: string, region: string, additionalInfo?: string }>>([])
+  const [savedAddresses, setSavedAddresses] = useState<Array<{ id: string, label: string, recipientName: string, phone: string, addressLine: string, city: string, region: string, relationship?: string, notes?: string }>>([])
   const [selectedSavedAddressId, setSelectedSavedAddressId] = useState<string>('')
   const [showRecipientForm, setShowRecipientForm] = useState(false)
   const [hasCheckedSavedRecipients, setHasCheckedSavedRecipients] = useState(false)
@@ -94,10 +94,10 @@ export default function CheckoutPage() {
 
   // Recipient Information (Primary focus for diaspora orders)
   const [recipientInfo, setRecipientInfo] = useState<RecipientInfo>({
-    fullName: '',
+    recipientName: '',
     phone: '',
     alternatePhone: '',
-    address: '',
+    addressLine: '',
     city: '',
     region: '',
     landmark: '',
@@ -144,9 +144,9 @@ export default function CheckoutPage() {
     if (savedShippingInfo) {
       setRecipientInfo(prev => ({
         ...prev,
-        fullName: prev.fullName || savedShippingInfo.name || '',
+        recipientName: prev.recipientName || savedShippingInfo.name || '',
         phone: prev.phone || savedShippingInfo.phone || '',
-        address: prev.address || savedShippingInfo.address || '',
+        addressLine: prev.addressLine || savedShippingInfo.address || '',
         city: prev.city || savedShippingInfo.city || '',
         region: prev.region || savedShippingInfo.region || ''
       }))
@@ -203,9 +203,9 @@ export default function CheckoutPage() {
       // Persist recipient info to cart store/localStorage for prefill
       try {
         persistShippingInfo({
-          name: next.fullName,
+          name: next.recipientName,
           phone: next.phone,
-          address: next.address,
+          address: next.addressLine,
           city: next.city,
           region: next.region
         } as any)
@@ -247,14 +247,14 @@ export default function CheckoutPage() {
     }
 
     // Validate recipient information
-    if (!recipientInfo.fullName.trim()) {
-      newErrors.recipient_fullName = "Recipient's name is required"
+    if (!recipientInfo.recipientName.trim()) {
+      newErrors.recipient_recipientName = "Recipient's name is required"
     }
     if (!recipientInfo.phone.trim()) {
       newErrors.recipient_phone = "Recipient's phone is required"
     }
-    if (!recipientInfo.address.trim()) {
-      newErrors.recipient_address = 'Delivery address is required'
+    if (!recipientInfo.addressLine.trim()) {
+      newErrors.recipient_addressLine = 'Delivery address is required'
     }
     if (!recipientInfo.city.trim()) {
       newErrors.recipient_city = 'City is required'
@@ -357,20 +357,21 @@ export default function CheckoutPage() {
     if (address) {
       setRecipientInfo(prev => ({
         ...prev,
-        fullName: address.fullName,
+        recipientName: address.recipientName,
         phone: address.phone,
-        address: address.address,
+        addressLine: address.addressLine,
         city: address.city,
         region: address.region,
-        landmark: address.additionalInfo || '',
-        // Try to extract relationship from label or set default
-        relationship: address.label.includes('Mother') ? 'Mother' :
-          address.label.includes('Father') ? 'Father' :
-            address.label.includes('Sister') ? 'Sister' :
-              address.label.includes('Brother') ? 'Brother' :
-                address.label.includes('Grandmother') ? 'Grandmother' :
-                  address.label.includes('Grandfather') ? 'Grandfather' :
-                    'Other',
+        landmark: address.notes || '',
+        // Use stored relationship if available, otherwise try to extract from label
+        relationship: address.relationship ||
+          (address.label.includes('Mother') ? 'Mother' :
+            address.label.includes('Father') ? 'Father' :
+              address.label.includes('Sister') ? 'Sister' :
+                address.label.includes('Brother') ? 'Brother' :
+                  address.label.includes('Grandmother') ? 'Grandmother' :
+                    address.label.includes('Grandfather') ? 'Grandfather' :
+                      'Other'),
         notes: prev.notes // Keep any existing notes
       }))
       setSelectedSavedAddressId(addressId)
@@ -378,9 +379,9 @@ export default function CheckoutPage() {
       // Clear any recipient-related errors when an address is selected
       setErrors(prev => {
         const newErrors = { ...prev }
-        delete newErrors.recipient_fullName
+        delete newErrors.recipient_recipientName
         delete newErrors.recipient_phone
-        delete newErrors.recipient_address
+        delete newErrors.recipient_addressLine
         delete newErrors.recipient_city
         delete newErrors.recipient_region
         delete newErrors.recipient_relationship
@@ -527,11 +528,11 @@ export default function CheckoutPage() {
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <h3 className="font-semibold">{address.fullName}</h3>
+                              <h3 className="font-semibold">{address.recipientName}</h3>
                               <span className="text-xs bg-muted px-2 py-1 rounded-full">{address.label}</span>
                             </div>
                             <p className="text-sm text-muted-foreground">{address.phone}</p>
-                            <p className="text-sm text-muted-foreground">{address.city}, {address.region}</p>
+                            <p className="text-sm text-muted-foreground">{address.addressLine}</p>
                           </div>
                           {selectedSavedAddressId === address.id && (
                             <CheckCircle className="w-5 h-5 text-primary" />
@@ -586,16 +587,16 @@ export default function CheckoutPage() {
                       <label className="text-sm font-medium">Full Name *</label>
                       <input
                         type="text"
-                        value={recipientInfo.fullName}
-                        onChange={(e) => handleRecipientChange('fullName', e.target.value)}
-                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all ${errors.recipient_fullName ? 'border-red-300 bg-red-50' : 'border-input'}`}
+                        value={recipientInfo.recipientName}
+                        onChange={(e) => handleRecipientChange('recipientName', e.target.value)}
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all ${errors.recipient_recipientName ? 'border-red-300 bg-red-50' : 'border-input'}`}
                         placeholder="e.g., Kwame Asante"
-                        aria-invalid={!!errors.recipient_fullName}
+                        aria-invalid={!!errors.recipient_recipientName}
                       />
-                      {errors.recipient_fullName && (
+                      {errors.recipient_recipientName && (
                         <p className="text-xs text-red-600 flex items-center gap-1">
                           <AlertCircle className="w-3 h-3" />
-                          {errors.recipient_fullName}
+                          {errors.recipient_recipientName}
                         </p>
                       )}
                     </div>
@@ -663,17 +664,17 @@ export default function CheckoutPage() {
                     <div className="md:col-span-2 space-y-2">
                       <label className="text-sm font-medium">Delivery Address *</label>
                       <textarea
-                        value={recipientInfo.address}
-                        onChange={(e) => handleRecipientChange('address', e.target.value)}
+                        value={recipientInfo.addressLine}
+                        onChange={(e) => handleRecipientChange('addressLine', e.target.value)}
                         rows={3}
-                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none ${errors.recipient_address ? 'border-red-300 bg-red-50' : 'border-input'}`}
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none ${errors.recipient_addressLine ? 'border-red-300 bg-red-50' : 'border-input'}`}
                         placeholder="Street address, house number, area..."
-                        aria-invalid={!!errors.recipient_address}
+                        aria-invalid={!!errors.recipient_addressLine}
                       />
-                      {errors.recipient_address && (
+                      {errors.recipient_addressLine && (
                         <p className="text-xs text-red-600 flex items-center gap-1">
                           <AlertCircle className="w-3 h-3" />
-                          {errors.recipient_address}
+                          {errors.recipient_addressLine}
                         </p>
                       )}
                     </div>

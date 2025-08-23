@@ -40,6 +40,7 @@ type Address = {
   addressLine: string
   city: string
   region: string
+  relationship?: string
   notes?: string
   isDefault?: boolean
 }
@@ -80,6 +81,7 @@ export default function ProfilePage() {
     addressLine: '',
     city: '',
     region: '',
+    relationship: '',
     notes: '',
     isDefault: false,
   })
@@ -187,6 +189,7 @@ export default function ProfilePage() {
       addressLine: '',
       city: '',
       region: '',
+      relationship: '',
       notes: '',
       isDefault: addresses.length === 0,
     })
@@ -203,6 +206,7 @@ export default function ProfilePage() {
       addressLine: address.addressLine || '',
       city: address.city || '',
       region: address.region || '',
+      relationship: address.relationship || '',
       notes: address.notes || '',
       isDefault: !!address.isDefault,
     })
@@ -694,7 +698,29 @@ export default function ProfilePage() {
                     {addressErrors.city && <p className="mt-1 text-xs text-red-600">{addressErrors.city}</p>}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Notes (optional)</label>
+                    <label className="block text-sm font-medium mb-2">Relationship to Recipient</label>
+                    <select
+                      value={addressForm.relationship || ''}
+                      onChange={(e) => setAddressForm(prev => ({ ...prev, relationship: e.target.value }))}
+                      className="w-full px-4 py-3 border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
+                    >
+                      <option value="">Select relationship</option>
+                      <option value="Mother">Mother</option>
+                      <option value="Father">Father</option>
+                      <option value="Sister">Sister</option>
+                      <option value="Brother">Brother</option>
+                      <option value="Grandmother">Grandmother</option>
+                      <option value="Grandfather">Grandfather</option>
+                      <option value="Uncle">Uncle</option>
+                      <option value="Aunt">Aunt</option>
+                      <option value="Cousin">Cousin</option>
+                      <option value="Friend">Friend</option>
+                      <option value="Myself">Myself</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Additional Notes</label>
                     <input
                       type="text"
                       value={addressForm.notes ?? ''}

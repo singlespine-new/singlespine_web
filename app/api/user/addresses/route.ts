@@ -7,12 +7,14 @@ import { NextResponse } from 'next/server'
 function toClientAddress(a: any) {
   let label = a.landmark || ''
   let notes: string | undefined
-  // Try to parse landmark as JSON meta: { label, notes }
+  // Try to parse landmark as JSON meta: { label, relationship, notes }
+  let relationship: string | undefined
   if (typeof a.landmark === 'string' && a.landmark.trim().startsWith('{')) {
     try {
       const meta = JSON.parse(a.landmark)
       if (meta && typeof meta === 'object') {
         if (typeof meta.label === 'string') label = meta.label
+        if (typeof meta.relationship === 'string') relationship = meta.relationship
         if (typeof meta.notes === 'string') notes = meta.notes
       }
     } catch {
@@ -35,6 +37,7 @@ function toClientAddress(a: any) {
     isDefault: !!a.isDefault,
     ghanaPostGPS: a.ghanaPostGPS || '',
     landmark: a.landmark || '',
+    relationship: relationship || undefined,
     notes: notes || undefined,
 
     // For checkout saved addresses UI compatibility
@@ -108,6 +111,7 @@ export async function POST(req: Request) {
     const city: string = body.city || ''
     const region: string = body.region || ''
     const ghanaPostGPS: string | undefined = body.ghanaPostGPS || undefined
+    const relationship: string | undefined = body.relationship || undefined
     const notes: string | undefined = body.notes || body.additionalInfo || undefined
     const isDefault: boolean = !!body.isDefault
 
@@ -124,8 +128,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Invalid input', errors }, { status: 400 })
     }
 
-    // Landmark stores JSON with label and notes (so we don't lose notes due to schema limits)
-    const landmarkMeta = JSON.stringify({ label: label || 'Address', notes: notes || '' })
+    // Landmark stores JSON with label, relationship, and notes (so we don't lose data due to schema limits)
+    const landmarkMeta = JSON.stringify({
+      label: label || 'Address',
+      relationship: relationship || '',
+      notes: notes || ''
+    })
 
     // If new address is default, unset other defaults
     if (isDefault) {

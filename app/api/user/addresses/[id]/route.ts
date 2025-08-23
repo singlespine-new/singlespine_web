@@ -91,8 +91,9 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     const body = await req.json().catch(() => ({} as any))
 
     // Accept flexible payload from both Profile and Checkout UIs
-    const labelProvided = 'label' in body || 'landmark' in body || 'notes' in body || 'additionalInfo' in body
+    const labelProvided = 'label' in body || 'landmark' in body || 'notes' in body || 'additionalInfo' in body || 'relationship' in body
     const label: string | undefined = body.label ?? body.landmark
+    const relationship: string | undefined = body.relationship
     const notes: string | undefined = body.notes ?? body.additionalInfo
 
     const recipientName: string | undefined = body.recipientName ?? body.fullName ?? body.name
@@ -136,15 +137,17 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     if (region !== undefined) data.region = region
     if (ghanaPostGPS !== undefined) data.ghanaPostGPS = ghanaPostGPS
 
-    // Update landmark meta (label + notes) only if relevant fields provided
+    // Update landmark meta (label + relationship + notes) only if relevant fields provided
     if (labelProvided) {
       let currentLabel = 'Address'
+      let currentRelationship = ''
       let currentNotes = ''
       if (typeof existing.landmark === 'string' && existing.landmark.trim().startsWith('{')) {
         try {
           const meta = JSON.parse(existing.landmark)
           if (meta && typeof meta === 'object') {
             if (typeof meta.label === 'string') currentLabel = meta.label
+            if (typeof meta.relationship === 'string') currentRelationship = meta.relationship
             if (typeof meta.notes === 'string') currentNotes = meta.notes
           }
         } catch {
@@ -153,8 +156,9 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
       }
 
       const nextLabel = typeof label === 'string' && label.trim() ? label : currentLabel
+      const nextRelationship = typeof relationship === 'string' ? relationship : currentRelationship
       const nextNotes = typeof notes === 'string' ? notes : currentNotes
-      data.landmark = JSON.stringify({ label: nextLabel, notes: nextNotes })
+      data.landmark = JSON.stringify({ label: nextLabel, relationship: nextRelationship, notes: nextNotes })
     }
 
     // Handle default toggling
