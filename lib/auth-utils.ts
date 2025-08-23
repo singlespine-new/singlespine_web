@@ -212,6 +212,19 @@ export const authEvents = {
       icon: '👋'
     })
 
+    // Store a safe callback URL for potential post-auth redirects
+    if (callbackUrl) {
+      try {
+        const url = new URL(callbackUrl, window.location.origin)
+        if (url.origin === window.location.origin) {
+          authStorage.setRedirectUrl(url.pathname + url.search + url.hash)
+        }
+      } catch (error) {
+        console.log(error)
+        // ignore invalid callback URL
+      }
+    }
+
     // Handle any pending cart actions
     const pendingAction = authStorage.getCartAction()
     if (pendingAction) {

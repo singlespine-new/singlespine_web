@@ -28,6 +28,11 @@ export default withAuth(
       )
     }
 
+    // If user is authenticated and on home page, redirect to products
+    if (token && pathname === '/') {
+      return NextResponse.redirect(new URL('/products', req.url))
+    }
+
     // If user is authenticated and trying to access auth pages, redirect to products
     if (token && (pathname.startsWith('/auth/signin') || pathname.startsWith('/auth/signup'))) {
       return NextResponse.redirect(new URL('/products', req.url))

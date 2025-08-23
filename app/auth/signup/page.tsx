@@ -10,7 +10,7 @@ import { Phone, ArrowLeft, CheckCircle, Loader2, User, Mail } from 'lucide-react
 import toast from '@/components/ui/toast'
 import OtpInput from 'react-otp-input'
 import Image from 'next/image'
-import { useAuth, useAuthRedirect, authEvents } from '@/lib/auth-utils'
+import { useAuthRedirect, authEvents } from '@/lib/auth-utils'
 
 type AuthMode = 'select' | 'phone' | 'otp' | 'details'
 

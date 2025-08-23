@@ -37,12 +37,16 @@ const Header = () => {
   const cartItemsCount = getTotalItems();
   const wishlistItemsCount = getWishlistTotal();
 
-  const navLinks = [
-    { label: 'Home', href: '/' },
-    { label: 'Products', href: '/products' },
-    { label: 'How it Works', href: '/how-it-works' },
-    // { label: 'About Us', href: '/about' },
-  ];
+  const navLinks = isAuthenticated
+    ? [
+      { label: 'Home', href: '/products' },
+      { label: 'How it Works', href: '/how-it-works' },
+    ]
+    : [
+      { label: 'Home', href: '/' },
+      { label: 'Products', href: '/products' },
+      { label: 'How it Works', href: '/how-it-works' },
+    ];
 
   const handleSignOut = async () => {
     try {
@@ -56,7 +60,7 @@ const Header = () => {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
       <nav className="container mx-auto flex h-16 items-center justify-between gap-4 px-4 md:px-6">
         {/* Logo */}
-        <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="Singlespine Home">
+        <Link href={isAuthenticated ? "/products" : "/"} className="flex shrink-0 items-center gap-2" aria-label="Singlespine Home">
           <Image
             src="/singlespine_logo.png" // Ensure this path is correct
             alt="Singlespine Logo"
@@ -193,7 +197,7 @@ const Header = () => {
               <SheetHeader className='mb-6 text-left'> {/* Added text-left */}
                 <SheetTitle>
                   {/* Logo inside menu */}
-                  <Link href="/" className="mb-2 inline-block" aria-label="Singlespine Home" onClick={() => setIsOpen(false)}>
+                  <Link href={isAuthenticated ? "/products" : "/"} className="mb-2 inline-block" aria-label="Singlespine Home" onClick={() => setIsOpen(false)}>
                     <Image
                       src="/singlespine_logo.png"
                       alt="Singlespine Logo"

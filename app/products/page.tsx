@@ -33,7 +33,12 @@ export default function ProductsPage() {
   const { isAuthenticated } = useAuth()
 
   // Filter states
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search).get('search') || ''
+    }
+    return ''
+  })
   const [category, setCategory] = useState('')
   const [sortBy, setSortBy] = useState('createdAt-desc')
   const [minPrice, setMinPrice] = useState('')
@@ -55,7 +60,7 @@ export default function ProductsPage() {
     try {
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: '12',
+        limit: '20',
         ...(searchQuery && { search: searchQuery }),
         ...(category && { category }),
         ...(sortBy && {
@@ -99,6 +104,16 @@ export default function ProductsPage() {
     setCurrentPage(1)
   }, [fetchProducts])
 
+  // Sync search from URL when user navigates with back/forward
+  useEffect(() => {
+    const onPopState = () => {
+      const param = new URLSearchParams(window.location.search).get('search') || ''
+      setSearchQuery(param)
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
+
   // Handle page change
   const handlePageChange = (page: number) => {
     fetchProducts(page)
@@ -109,6 +124,16 @@ export default function ProductsPage() {
   // Handle search
   const handleSearch = (query: string) => {
     setSearchQuery(query)
+
+    // Keep URL in sync for shareable links and refresh survival
+    const url = new URL(window.location.href)
+    const q = (query || '').trim()
+    if (q) {
+      url.searchParams.set('search', q)
+    } else {
+      url.searchParams.delete('search')
+    }
+    window.history.replaceState({}, '', url.toString())
   }
 
   // Clear filters
@@ -121,6 +146,11 @@ export default function ProductsPage() {
     setOrigin('')
     setFeatured(false)
     setInStock(false)
+
+    // Remove search param from URL when clearing
+    const url = new URL(window.location.href)
+    url.searchParams.delete('search')
+    window.history.replaceState({}, '', url.toString())
   }
 
   // Get active filters count
@@ -204,6 +234,7 @@ export default function ProductsPage() {
                 size="lg"
                 containerClassName="shadow-lg"
                 icon={<Search className="text-primary" size={20} />}
+                debounceOnChange={300}
               />
             </div>
           </div>
@@ -384,13 +415,13 @@ export default function ProductsPage() {
 
             {/* Products Grid */}
             {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[...Array(12)].map((_, i) => (
-                  <div key={i} className="bg-card border border-border/40 rounded-xl p-4 animate-pulse">
-                    <div className="aspect-[4/3] bg-muted rounded-lg mb-4" />
-                    <div className="h-4 bg-muted rounded mb-2" />
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-3 md:gap-4">
+                {[...Array(20)].map((_, i) => (
+                  <div key={i} className="bg-card border border-border/40 rounded-lg p-3 animate-pulse">
+                    <div className="aspect-square bg-muted rounded-md mb-3" />
+                    <div className="h-3 bg-muted rounded mb-2" />
                     <div className="h-3 bg-muted rounded w-2/3 mb-2" />
-                    <div className="h-6 bg-muted rounded w-1/2" />
+                    <div className="h-4 bg-muted rounded w-1/2" />
                   </div>
                 ))}
               </div>
@@ -422,8 +453,8 @@ export default function ProductsPage() {
               <div className={cn(
                 "w-full max-w-full overflow-hidden",
                 viewMode === 'grid'
-                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-                  : "space-y-6"
+                  ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-3 md:gap-4"
+                  : "space-y-4"
               )}>
                 {products.map((product) => (
                   <div

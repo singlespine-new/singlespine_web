@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth, useRequireAuth } from '@/lib/auth-utils'
 import { Button } from '@/components/ui/Button'
-import { ShoppingCart, Lock, CreditCard, MapPin, User, CheckCircle, Phone, AlertCircle } from 'lucide-react'
+import { ShoppingCart, Lock, CreditCard, MapPin, User, CheckCircle, Phone, AlertCircle, Shield, Truck, Clock, Star, Package, Gift, ArrowRight, ChevronDown, Zap, TrendingUp, ArrowLeft, Pencil, Plus, Edit3, Trash2, CheckCircle2, Users, Heart, X } from 'lucide-react'
 import toast from '@/components/ui/toast'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useCartStore } from '@/lib/store/cart'
 import SmartPhonePrompt from '@/components/PhoneNumberPrompt/SmartPhonePrompt'
 import { useCheckoutPhonePrompt } from '@/components/PhoneNumberPrompt/usePhonePrompt'
+import PaymentMethodManager from '@/components/PaymentMethods/PaymentMethodManager'
 
 interface CartItem {
   id: string
@@ -34,11 +35,30 @@ interface CartSummary {
   totalItems: number
 }
 
+interface RecipientInfo {
+  fullName: string
+  phone: string
+  alternatePhone: string
+  address: string
+  city: string
+  region: string
+  landmark: string
+  relationship: string
+  notes: string
+}
+
+interface PaymentMethod {
+  id: string
+  type: 'card' | 'mobile_money' | 'bank_transfer'
+  details: any
+  isDefault: boolean
+}
+
 export default function CheckoutPage() {
   const { isAuthenticated, isLoading } = useRequireAuth()
   const { user } = useAuth()
   const router = useRouter()
-  const { items, getTotalItems, getTotalPrice, getShippingCost, getFinalTotal, clearCart } = useCartStore()
+  const { items, getTotalItems, getTotalPrice, getShippingCost, getFinalTotal, clearCart, setShippingInfo: persistShippingInfo, shippingInfo: savedShippingInfo } = useCartStore()
 
   // Phone prompt hook
   const {
@@ -53,16 +73,34 @@ export default function CheckoutPage() {
 
   const [submitting, setSubmitting] = useState(false)
   const [showPhoneRequired, setShowPhoneRequired] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [deliveryOption, setDeliveryOption] = useState<'standard' | 'express'>('standard')
+  const [savedAddresses, setSavedAddresses] = useState<Array<{ id: string, label: string, fullName: string, phone: string, address: string, city: string, region: string, additionalInfo?: string }>>([])
+  const [selectedSavedAddressId, setSelectedSavedAddressId] = useState<string>('')
+  const [showRecipientForm, setShowRecipientForm] = useState(false)
+  const [hasCheckedSavedRecipients, setHasCheckedSavedRecipients] = useState(false)
+  const [currentStep, setCurrentStep] = useState(1)
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null)
+  const [showPaymentStep, setShowPaymentStep] = useState(false)
 
-  // Shipping Information
-  const [shippingInfo, setShippingInfo] = useState({
+  // Recipient Information (Primary focus for diaspora orders)
+  const [recipientInfo, setRecipientInfo] = useState<RecipientInfo>({
     fullName: '',
     phone: '',
-    email: '',
+    alternatePhone: '',
     address: '',
     city: '',
     region: '',
-    additionalInfo: ''
+    landmark: '',
+    relationship: '',
+    notes: ''
+  })
+
+  // Your Information (Order placer)
+  const [orderPlacer, setOrderPlacer] = useState({
+    fullName: '',
+    phone: '',
+    email: ''
   })
 
   // Transform cart store items to local format
@@ -76,22 +114,43 @@ export default function CheckoutPage() {
     variant: item.variant
   }))
 
+  const baseShipping = getShippingCost()
+  const subtotal = getTotalPrice()
+  const selectedShippingCost = deliveryOption === 'express' ? baseShipping + 20 : baseShipping
+  const tax = subtotal * 0.125 // 12.5% VAT
   const cartSummary: CartSummary = {
-    subtotal: getTotalPrice(),
-    shippingCost: getShippingCost(),
-    tax: getTotalPrice() * 0.125, // 12.5% VAT
-    total: getFinalTotal() + (getTotalPrice() * 0.125),
+    subtotal,
+    shippingCost: selectedShippingCost,
+    tax,
+    total: subtotal + selectedShippingCost + tax,
     totalItems: getTotalItems()
   }
 
-  // Pre-fill user information
+  const formatMoney = (n: number) =>
+    `₵${Number(n ?? 0).toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+  // Pre-fill user information and load saved data/addresses
   useEffect(() => {
-    if (user) {
-      setShippingInfo(prev => ({
+    // Merge persisted shipping info first for recipient
+    if (savedShippingInfo) {
+      setRecipientInfo(prev => ({
         ...prev,
-        fullName: user.name || '',
-        email: user.email || '',
-        phone: user.phoneNumber || ''
+        fullName: prev.fullName || savedShippingInfo.name || '',
+        phone: prev.phone || savedShippingInfo.phone || '',
+        address: prev.address || savedShippingInfo.address || '',
+        city: prev.city || savedShippingInfo.city || '',
+        region: prev.region || savedShippingInfo.region || ''
+      }))
+    }
+
+    // Fill order placer info with user data
+    if (user) {
+      setOrderPlacer(prev => ({
+        ...prev,
+        fullName
+          : prev.fullName || user.name || '',
+        email: prev.email || user.email || '',
+        phone: prev.phone || user.phoneNumber || ''
       }))
 
       // Show gentle alert if phone is missing
@@ -102,123 +161,270 @@ export default function CheckoutPage() {
         return () => clearTimeout(timer)
       }
     }
-  }, [user, isAuthenticated])
 
-  const handleInputChange = (field: string, value: string) => {
-    setShippingInfo(prev => ({
-      ...prev,
-      [field]: value
-    }))
+    // Fetch saved addresses (best effort)
+    if (isAuthenticated) {
+      let active = true
+        ; (async () => {
+          try {
+            const res = await fetch('/api/user/addresses')
+            if (!res.ok) return
+            const data = await res.json()
+            if (!active) return
+            if (Array.isArray(data?.addresses)) {
+              setSavedAddresses(data.addresses)
+              setHasCheckedSavedRecipients(true)
+              // If no saved recipients, show the form immediately
+              if (data.addresses.length === 0) {
+                setShowRecipientForm(true)
+              }
+            }
+          } catch {
+            // ignore
+          }
+        })()
+      return () => { active = false }
+    }
+  }, [user, isAuthenticated, savedShippingInfo])
 
-    // Auto-save phone number to user profile when they type it
-    if (field === 'phone' && value && user && !user.phoneNumber && value.length >= 10) {
-      updateUserPhone(value)
+  const handleRecipientChange = (field: keyof RecipientInfo, value: string) => {
+    setRecipientInfo(prev => {
+      const next = { ...prev, [field]: value }
+
+      // Persist recipient info to cart store/localStorage for prefill
+      try {
+        persistShippingInfo({
+          name: next.fullName,
+          phone: next.phone,
+          address: next.address,
+          city: next.city,
+          region: next.region
+        } as any)
+      } catch { }
+
+      return next
+    })
+
+    // Clear field error as user types
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }))
     }
   }
 
-  const updateUserPhone = async (phone: string) => {
-    try {
-      const response = await fetch('/api/user/update-phone', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone })
-      })
-
-      if (response.ok) {
-        toast.success('Phone number saved to your profile! 📱', {
-          duration: 3000,
-          icon: <CheckCircle className="w-4 h-4" />
-        })
-      }
-    } catch (error) {
-      console.warn('Failed to auto-save phone number:', error)
+  const handleOrderPlacerChange = (field: string, value: string) => {
+    setOrderPlacer(prev => ({ ...prev, [field]: value }))
+    // Clear field error as user types
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }))
     }
   }
 
   const validateForm = () => {
-    const required = ['fullName', 'phone', 'address', 'city', 'region']
-    const missing = required.filter(field => !shippingInfo[field as keyof typeof shippingInfo].trim())
+    const newErrors: Record<string, string> = {}
 
-    if (missing.length > 0) {
-      // If phone is missing and user doesn't have one, show phone prompt
-      if (missing.includes('phone') && needsPhoneNumber) {
-        showPhonePromptModal('checkout')
-        return false
+    // Validate order placer (only if not authenticated)
+    if (!isAuthenticated) {
+      if (!orderPlacer.fullName.trim()) {
+        newErrors.placer_fullName = 'Your name is required'
       }
-      toast.error(`Please fill in: ${missing.join(', ')}`)
-      return false
+      if (!orderPlacer.email.trim()) {
+        newErrors.placer_email = 'Your email is required'
+      } else if (!/\S+@\S+\.\S+/.test(orderPlacer.email)) {
+        newErrors.placer_email = 'Please enter a valid email'
+      }
+      if (!orderPlacer.phone.trim()) {
+        newErrors.placer_phone = 'Your phone number is required'
+      }
     }
 
-    return true
+    // Validate recipient information
+    if (!recipientInfo.fullName.trim()) {
+      newErrors.recipient_fullName = "Recipient's name is required"
+    }
+    if (!recipientInfo.phone.trim()) {
+      newErrors.recipient_phone = "Recipient's phone is required"
+    }
+    if (!recipientInfo.address.trim()) {
+      newErrors.recipient_address = 'Delivery address is required'
+    }
+    if (!recipientInfo.city.trim()) {
+      newErrors.recipient_city = 'City is required'
+    }
+    if (!recipientInfo.region.trim()) {
+      newErrors.recipient_region = 'Region is required'
+    }
+    if (!recipientInfo.relationship.trim()) {
+      newErrors.recipient_relationship = 'Relationship is required'
+    }
+
+    setErrors(newErrors)
+
+    // Debug logging
+    if (Object.keys(newErrors).length > 0) {
+      console.log('Validation errors:', newErrors)
+      console.log('Recipient info:', recipientInfo)
+      console.log('Order placer:', orderPlacer)
+      console.log('Is authenticated:', isAuthenticated)
+    }
+
+    return Object.keys(newErrors).length === 0
   }
 
-  const handleCheckout = async () => {
-    if (!validateForm()) return
+  const handleSubmit = async () => {
+    if (!validateForm()) {
+      // Show specific error for missing fields
+      const errorCount = Object.keys(errors).length
+      if (errorCount === 1) {
+        const fieldName = Object.keys(errors)[0].replace('recipient_', '').replace('placer_', '')
+        toast.error(`Please fill in the ${fieldName.replace(/([A-Z])/g, ' $1').toLowerCase()} field`)
+      } else {
+        toast.error(`Please fill in ${errorCount} required fields`)
+      }
 
-    if (!cartItems.length) {
-      toast.error('Your cart is empty')
+      // Scroll to first error
+      const firstErrorElement = document.querySelector('[aria-invalid="true"]')
+      if (firstErrorElement) {
+        firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      return
+    }
+
+    if (needsPhoneNumber) {
+      showPhonePromptModal()
+      return
+    }
+
+    // Check if payment method is selected
+    if (!selectedPaymentMethod) {
+      setShowPaymentStep(true)
       return
     }
 
     setSubmitting(true)
 
     try {
-      // Update user phone number if they filled it in checkout form and it's different
-      if (shippingInfo.phone && shippingInfo.phone !== currentPhone) {
-        try {
-          await savePhoneNumber(shippingInfo.phone)
-        } catch (error) {
-          console.warn('Failed to save phone number:', error)
-          // Continue with checkout even if phone save fails
-        }
+      const orderData = {
+        items: cartItems,
+        recipient: recipientInfo,
+        orderPlacer: isAuthenticated ? {
+
+          fullName: user?.name || orderPlacer.fullName,
+          email: user?.email || orderPlacer.email,
+          phone: user?.phoneNumber || orderPlacer.phone
+        } : orderPlacer,
+        delivery: {
+          option: deliveryOption,
+          cost: selectedShippingCost
+        },
+        summary: cartSummary,
+        paymentMethod: selectedPaymentMethod
       }
 
-      // In a real app, this would create an order
-      await new Promise(resolve => setTimeout(resolve, 2000)) // Simulate API call
-
-      // Clear cart after successful order
-      await clearCart()
-
-      toast.success('Order placed successfully! 🎉', {
-        duration: 5000,
-        icon: <CheckCircle className="w-5 h-5" />
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData)
       })
 
-      // Redirect to order confirmation or orders page
-      router.push('/orders?success=true')
+      if (!response.ok) {
+        const error = await response.text()
+        throw new Error(error || 'Failed to create order')
+      }
+
+      const { orderId } = await response.json()
+      clearCart()
+      toast.success('Order placed successfully! 🎉')
+      router.push(`/orders/${orderId}`)
     } catch (error) {
-      console.error('Checkout error:', error)
-      toast.error('Failed to place order. Please try again.')
+      console.error('Order submission error:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to create order. Please try again.')
     } finally {
       setSubmitting(false)
     }
   }
 
-  // Show loading state
+  const handleSavedAddressSelect = (addressId: string) => {
+    const address = savedAddresses.find(addr => addr.id === addressId)
+    if (address) {
+      setRecipientInfo(prev => ({
+        ...prev,
+        fullName: address.fullName,
+        phone: address.phone,
+        address: address.address,
+        city: address.city,
+        region: address.region,
+        landmark: address.additionalInfo || '',
+        // Try to extract relationship from label or set default
+        relationship: address.label.includes('Mother') ? 'Mother' :
+          address.label.includes('Father') ? 'Father' :
+            address.label.includes('Sister') ? 'Sister' :
+              address.label.includes('Brother') ? 'Brother' :
+                address.label.includes('Grandmother') ? 'Grandmother' :
+                  address.label.includes('Grandfather') ? 'Grandfather' :
+                    'Other',
+        notes: prev.notes // Keep any existing notes
+      }))
+      setSelectedSavedAddressId(addressId)
+
+      // Clear any recipient-related errors when an address is selected
+      setErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors.recipient_fullName
+        delete newErrors.recipient_phone
+        delete newErrors.recipient_address
+        delete newErrors.recipient_city
+        delete newErrors.recipient_region
+        delete newErrors.recipient_relationship
+        return newErrors
+      })
+    }
+  }
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto"></div>
           <p className="text-muted-foreground">Loading checkout...</p>
         </div>
       </div>
     )
   }
 
-  // Show empty cart state
-  if (!cartItems.length) {
+  if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-16">
-          <div className="max-w-2xl mx-auto text-center">
-            <ShoppingCart className="w-24 h-24 text-muted-foreground mx-auto mb-6" />
-            <h1 className="text-3xl font-bold text-foreground mb-4">Your cart is empty</h1>
-            <p className="text-muted-foreground mb-8">
-              Add some products to your cart before proceeding to checkout.
-            </p>
-            <Button asChild size="lg">
-              <Link href="/products">Continue Shopping</Link>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
+        <div className="text-center space-y-6 max-w-md">
+          <div className="p-6 bg-card/50 backdrop-blur border border-border/50 rounded-3xl">
+            <Lock className="w-16 h-16 text-primary mx-auto mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Authentication Required</h2>
+            <p className="text-muted-foreground mb-6">Please sign in to continue with your checkout</p>
+            <div className="space-y-3">
+              <Button asChild className="w-full h-12 rounded-xl">
+                <Link href="/auth/signin">Sign In</Link>
+              </Button>
+              <Button asChild variant="outline" className="w-full h-12 rounded-xl">
+                <Link href="/auth/signup">Create Account</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (cartItems.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
+        <div className="text-center space-y-6 max-w-md">
+          <div className="p-8 bg-card/50 backdrop-blur border border-border/50 rounded-3xl">
+            <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
+              <ShoppingCart className="w-10 h-10 text-muted-foreground" />
+            </div>
+            <h2 className="text-2xl font-bold mb-2">Your Cart is Empty</h2>
+            <p className="text-muted-foreground mb-6">Add some products to continue with checkout</p>
+            <Button asChild className="w-full h-12 rounded-xl">
+              <Link href="/products">Browse Products</Link>
             </Button>
           </div>
         </div>
@@ -227,286 +433,590 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-            <Link href="/" className="hover:text-primary">Home</Link>
-            <span>/</span>
-            <Link href="/products" className="hover:text-primary">Products</Link>
-            <span>/</span>
-            <span className="text-foreground">Checkout</span>
-          </div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-            <Lock className="w-8 h-8 text-primary" />
-            Secure Checkout
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Complete your order and send love to your family in Ghana
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      {/* Header */}
+      <div className="bg-white/80 backdrop-blur-sm border-b border-border/50 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.back()}
+                className="p-2 h-auto rounded-xl"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <div>
+                <h1 className="text-xl font-bold">Checkout</h1>
+                <p className="text-sm text-muted-foreground">Complete your order</p>
+              </div>
+            </div>
 
+            {/* Progress Steps */}
+            <div className="hidden md:flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white text-sm font-bold">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
+                <span className="text-sm font-medium text-primary">Cart</span>
+              </div>
+              <div className="w-8 h-0.5 bg-primary"></div>
+              <div className="flex items-center gap-2">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${showPaymentStep ? 'bg-primary text-white' : 'bg-primary text-white'
+                  }`}>
+                  {showPaymentStep ? <CheckCircle2 className="w-4 h-4" /> : '1'}
+                </div>
+                <span className={`text-sm font-medium ${showPaymentStep ? 'text-primary' : 'text-primary'}`}>Details</span>
+              </div>
+              <div className={`w-8 h-0.5 ${showPaymentStep ? 'bg-primary' : 'bg-muted'}`}></div>
+              <div className="flex items-center gap-2">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${showPaymentStep ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
+                  }`}>
+                  {showPaymentStep && selectedPaymentMethod ? <CheckCircle2 className="w-4 h-4" /> : '2'}
+                </div>
+                <span className={`text-sm ${showPaymentStep ? 'font-medium text-primary' : 'text-muted-foreground'}`}>Payment</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Shipping Information */}
+
+          {/* Left Column - Form */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Phone Number Alert */}
-            {showPhoneRequired && needsPhoneNumber && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1">
-                    <h3 className="font-medium text-amber-800 mb-1">
-                      Phone Number Required
-                    </h3>
-                    <p className="text-sm text-amber-700 mb-3">
-                      We need your phone number to coordinate delivery with you and provide order updates.
-                    </p>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => showPhonePromptModal('checkout')}
-                        size="sm"
-                        className="bg-amber-600 hover:bg-amber-700 text-white"
+
+            {/* Recipient Selection */}
+            <div className={`bg-white rounded-2xl border p-6 shadow-sm ${Object.keys(errors).some(key => key.startsWith('recipient_'))
+              ? 'border-red-200 bg-red-50/30'
+              : 'border-border/20'}`}>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-primary/10 rounded-xl">
+                  <Heart className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold">Send to Ghana</h2>
+                  <p className="text-sm text-muted-foreground">Who will receive this order?</p>
+                </div>
+              </div>
+
+              {/* Saved Recipients */}
+              {savedAddresses.length > 0 && !showRecipientForm && (
+                <div className="space-y-4">
+                  <div className="grid gap-3">
+                    {savedAddresses.map((address) => (
+                      <div
+                        key={address.id}
+                        onClick={() => handleSavedAddressSelect(address.id)}
+                        className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${selectedSavedAddressId === address.id
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border/30 hover:border-border/60'
+                          }`}
                       >
-                        <Phone className="w-4 h-4 mr-2" />
-                        Add Phone Number
-                      </Button>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-semibold">{address.fullName}</h3>
+                              <span className="text-xs bg-muted px-2 py-1 rounded-full">{address.label}</span>
+                            </div>
+                            <p className="text-sm text-muted-foreground">{address.phone}</p>
+                            <p className="text-sm text-muted-foreground">{address.city}, {address.region}</p>
+                          </div>
+                          {selectedSavedAddressId === address.id && (
+                            <CheckCircle className="w-5 h-5 text-primary" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowRecipientForm(true)}
+                    className="w-full h-12 rounded-xl border-dashed"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add New Recipient
+                  </Button>
+                </div>
+              )}
+
+              {/* New Recipient Form */}
+              {(showRecipientForm || savedAddresses.length === 0) && (
+                <div className="space-y-6">
+                  {savedAddresses.length > 0 && (
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold">New Recipient Details</h3>
                       <Button
-                        onClick={() => setShowPhoneRequired(false)}
-                        size="sm"
                         variant="ghost"
-                        className="text-amber-700 hover:text-amber-800"
+                        size="sm"
+                        onClick={() => setShowRecipientForm(false)}
+                        className="text-muted-foreground"
                       >
-                        I'll add it below
+                        Cancel
                       </Button>
+                    </div>
+                  )}
+
+                  {Object.keys(errors).some(key => key.startsWith('recipient_')) && (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                      <div className="flex items-center gap-2 text-amber-800 text-sm font-medium">
+                        <AlertCircle className="w-4 h-4" />
+                        Please complete all required recipient information
+                      </div>
+                      <p className="text-xs text-amber-700 mt-1">
+                        All fields marked with * are required to ensure successful delivery
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Full Name *</label>
+                      <input
+                        type="text"
+                        value={recipientInfo.fullName}
+                        onChange={(e) => handleRecipientChange('fullName', e.target.value)}
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all ${errors.recipient_fullName ? 'border-red-300 bg-red-50' : 'border-input'}`}
+                        placeholder="e.g., Kwame Asante"
+                        aria-invalid={!!errors.recipient_fullName}
+                      />
+                      {errors.recipient_fullName && (
+                        <p className="text-xs text-red-600 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          {errors.recipient_fullName}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Relationship *</label>
+                      <select
+                        value={recipientInfo.relationship}
+                        onChange={(e) => handleRecipientChange('relationship', e.target.value)}
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none ${errors.recipient_relationship ? 'border-red-300 bg-red-50' : 'border-input'}`}
+                        aria-invalid={!!errors.recipient_relationship}
+                      >
+                        <option value="">Select relationship</option>
+                        <option value="Mother">Mother</option>
+                        <option value="Father">Father</option>
+                        <option value="Sister">Sister</option>
+                        <option value="Brother">Brother</option>
+                        <option value="Grandmother">Grandmother</option>
+                        <option value="Grandfather">Grandfather</option>
+                        <option value="Aunt">Aunt</option>
+                        <option value="Uncle">Uncle</option>
+                        <option value="Cousin">Cousin</option>
+                        <option value="Friend">Friend</option>
+                        <option value="Spouse">Spouse</option>
+                        <option value="Child">Child</option>
+                        <option value="Other">Other</option>
+                      </select>
+                      {errors.recipient_relationship && (
+                        <p className="text-xs text-red-600 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          {errors.recipient_relationship}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Phone Number *</label>
+                      <input
+                        type="tel"
+                        value={recipientInfo.phone}
+                        onChange={(e) => handleRecipientChange('phone', e.target.value)}
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all ${errors.recipient_phone ? 'border-red-300 bg-red-50' : 'border-input'}`}
+                        placeholder="0XXX XXX XXX"
+                        aria-invalid={!!errors.recipient_phone}
+                      />
+                      {errors.recipient_phone && (
+                        <p className="text-xs text-red-600 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          {errors.recipient_phone}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Alternative Phone</label>
+                      <input
+                        type="tel"
+                        value={recipientInfo.alternatePhone}
+                        onChange={(e) => handleRecipientChange('alternatePhone', e.target.value)}
+                        className="w-full px-4 py-3 border border-input rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                        placeholder="Backup contact (optional)"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2 space-y-2">
+                      <label className="text-sm font-medium">Delivery Address *</label>
+                      <textarea
+                        value={recipientInfo.address}
+                        onChange={(e) => handleRecipientChange('address', e.target.value)}
+                        rows={3}
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none ${errors.recipient_address ? 'border-red-300 bg-red-50' : 'border-input'}`}
+                        placeholder="Street address, house number, area..."
+                        aria-invalid={!!errors.recipient_address}
+                      />
+                      {errors.recipient_address && (
+                        <p className="text-xs text-red-600 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          {errors.recipient_address}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">City *</label>
+                      <input
+                        type="text"
+                        value={recipientInfo.city}
+                        onChange={(e) => handleRecipientChange('city', e.target.value)}
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all ${errors.recipient_city ? 'border-red-300 bg-red-50' : 'border-input'}`}
+                        placeholder="e.g., Accra, Kumasi"
+                        aria-invalid={!!errors.recipient_city}
+                      />
+                      {errors.recipient_city && (
+                        <p className="text-xs text-red-600 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          {errors.recipient_city}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+
+                      <label className="text-sm font-medium">Region *</label>
+                      <select
+                        value={recipientInfo.region}
+                        onChange={(e) => handleRecipientChange('region', e.target.value)}
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none ${errors.recipient_region ? 'border-red-300 bg-red-50' : 'border-input'}`}
+                        aria-invalid={!!errors.recipient_region}
+                      >
+                        <option value="">Select region</option>
+                        <option value="Greater Accra">Greater Accra</option>
+                        <option value="Ashanti">Ashanti</option>
+                        <option value="Western">Western</option>
+                        <option value="Central">Central</option>
+                        <option value="Eastern">Eastern</option>
+                        <option value="Northern">Northern</option>
+                        <option value="Upper East">Upper East</option>
+                        <option value="Upper West">Upper West</option>
+                        <option value="Volta">Volta</option>
+                        <option value="Brong Ahafo">Brong Ahafo</option>
+                      </select>
+                      {errors.recipient_region && (
+                        <p className="text-xs text-red-600 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          {errors.recipient_region}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="md:col-span-2 space-y-2">
+                      <label className="text-sm font-medium">Landmark/Additional Info</label>
+                      <input
+                        type="text"
+                        value={recipientInfo.landmark}
+                        onChange={(e) => handleRecipientChange('landmark', e.target.value)}
+                        className="w-full px-4 py-3 border border-input rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                        placeholder="Near mosque, school, etc. (optional)"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2 space-y-2">
+                      <label className="text-sm font-medium">Special Instructions</label>
+                      <textarea
+                        value={recipientInfo.notes}
+                        onChange={(e) => handleRecipientChange('notes', e.target.value)}
+                        rows={2}
+                        className="w-full px-4 py-3 border border-input rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
+                        placeholder="Any special delivery instructions... (optional)"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Delivery Options */}
+            <div className="bg-white rounded-2xl border border-border/20 p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-primary/10 rounded-xl">
+                  <Truck className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold">Delivery Options</h2>
+                  <p className="text-sm text-muted-foreground">Choose your preferred delivery speed</p>
+                </div>
+              </div>
+
+              <div className="grid gap-4">
+                <div
+                  onClick={() => setDeliveryOption('standard')}
+                  className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${deliveryOption === 'standard'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border/30 hover:border-border/60'
+                    }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-50 rounded-lg">
+                        <Truck className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">Standard Delivery</h3>
+                        <p className="text-sm text-muted-foreground">5-7 business days</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">{formatMoney(baseShipping)}</p>
+                      {deliveryOption === 'standard' && (
+                        <CheckCircle className="w-5 h-5 text-primary ml-2 inline" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setDeliveryOption('express')}
+                  className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${deliveryOption === 'express'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border/30 hover:border-border/60'
+                    }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-orange-50 rounded-lg">
+                        <Zap className="w-5 h-5 text-orange-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">Express Delivery</h3>
+                        <p className="text-sm text-muted-foreground">2-3 business days</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">{formatMoney(baseShipping + 20)}</p>
+                      {deliveryOption === 'express' && (
+                        <CheckCircle className="w-5 h-5 text-primary ml-2 inline" />
+                      )}
                     </div>
                   </div>
                 </div>
               </div>
-            )}
-
-            {/* User Info */}
-            <div className="bg-card border border-border rounded-xl p-6">
-              <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
-                <User className="w-5 h-5" />
-                Your Information
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={shippingInfo.fullName}
-                    onChange={(e) => handleInputChange('fullName', e.target.value)}
-                    className="w-full px-4 py-3 border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
-                    placeholder="Enter your full name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Phone Number *
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="tel"
-                      value={shippingInfo.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
-                      className="w-full px-4 py-3 border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
-                      placeholder="0XXX XXX XXX"
-                    />
-                    {needsPhoneNumber && (
-                      <button
-                        onClick={() => showPhonePromptModal('checkout')}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-primary hover:text-primary/80"
-                        title="Use phone prompt"
-                      >
-                        <Phone className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    value={shippingInfo.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="w-full px-4 py-3 border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
-                    placeholder="your@email.com"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Delivery Address */}
-            <div className="bg-card border border-border rounded-xl p-6">
-              <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
-                <MapPin className="w-5 h-5" />
-                Delivery Address in Ghana
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Street Address *
-                  </label>
-                  <textarea
-                    value={shippingInfo.address}
-                    onChange={(e) => handleInputChange('address', e.target.value)}
-                    rows={3}
-                    className="w-full px-4 py-3 border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
-                    placeholder="Enter the full delivery address"
-                  />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      City *
-                    </label>
-                    <input
-                      type="text"
-                      value={shippingInfo.city}
-                      onChange={(e) => handleInputChange('city', e.target.value)}
-                      className="w-full px-4 py-3 border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
-                      placeholder="e.g., Accra, Kumasi"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Region *
-                    </label>
-                    <select
-                      value={shippingInfo.region}
-                      onChange={(e) => handleInputChange('region', e.target.value)}
-                      className="w-full px-4 py-3 border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
-                    >
-                      <option value="">Select Region</option>
-                      <option value="Greater Accra">Greater Accra</option>
-                      <option value="Ashanti">Ashanti</option>
-                      <option value="Western">Western</option>
-                      <option value="Central">Central</option>
-                      <option value="Eastern">Eastern</option>
-                      <option value="Northern">Northern</option>
-                      <option value="Upper East">Upper East</option>
-                      <option value="Upper West">Upper West</option>
-                      <option value="Volta">Volta</option>
-                      <option value="Brong Ahafo">Brong Ahafo</option>
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Additional Information
-                  </label>
-                  <textarea
-                    value={shippingInfo.additionalInfo}
-                    onChange={(e) => handleInputChange('additionalInfo', e.target.value)}
-                    rows={2}
-                    className="w-full px-4 py-3 border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
-                    placeholder="Landmarks, delivery instructions, recipient's phone number, etc."
-                  />
-                </div>
-              </div>
             </div>
           </div>
 
-          {/* Order Summary */}
-          <div className="space-y-6">
-            {/* Cart Items */}
-            <div className="bg-card border border-border rounded-xl p-6">
-              <h2 className="text-xl font-semibold text-foreground mb-4">Order Summary</h2>
-              <div className="space-y-4">
+          {/* Right Column - Order Summary */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-2xl border border-border/20 p-6 shadow-sm sticky top-24">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-primary/10 rounded-xl">
+                  <Package className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold">Order Summary</h2>
+                  <p className="text-sm text-muted-foreground">{cartItems.length} items</p>
+                </div>
+              </div>
+
+              {/* Cart Items */}
+              <div className="space-y-4 mb-6">
                 {cartItems.map((item) => (
-                  <div key={item.id} className="flex gap-3 p-3 bg-muted/30 rounded-lg">
+                  <div key={item.id} className="flex gap-3 p-3 bg-muted/30 rounded-xl">
                     <Image
                       src={item.image}
                       alt={item.name}
-                      width={64}
-                      height={64}
-                      className="w-16 h-16 object-cover rounded-lg"
+                      width={60}
+                      height={60}
+                      className="w-15 h-15 object-cover rounded-lg"
                     />
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-foreground truncate">{item.name}</h3>
+                      <h3 className="font-medium text-sm truncate">{item.name}</h3>
                       {item.variant && (
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                           {item.variant.name}: {item.variant.value}
                         </p>
                       )}
                       <div className="flex items-center justify-between mt-1">
-                        <span className="text-sm text-muted-foreground">Qty: {item.quantity}</span>
-                        <span className="font-semibold text-foreground">₵{item.price}</span>
+                        <span className="text-xs text-muted-foreground">Qty: {item.quantity}</span>
+                        <span className="font-semibold text-sm">{formatMoney(item.price * item.quantity)}</span>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
 
-            {/* Pricing Summary */}
-            {cartSummary && (
-              <div className="bg-card border border-border rounded-xl p-6">
-                <div className="space-y-3">
-                  <div className="flex justify-between text-foreground">
-                    <span>Subtotal ({cartSummary.totalItems} items)</span>
-                    <span>₵{cartSummary.subtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-foreground">
-                    <span>Delivery Fee</span>
-                    <span>{cartSummary.shippingCost > 0 ? `₵${cartSummary.shippingCost.toFixed(2)}` : 'FREE'}</span>
-                  </div>
-                  <div className="flex justify-between text-foreground">
-                    <span>VAT (12.5%)</span>
-                    <span>₵{cartSummary.tax.toFixed(2)}</span>
-                  </div>
-                  <div className="border-t border-border pt-3">
-                    <div className="flex justify-between text-lg font-bold text-foreground">
-                      <span>Total</span>
-                      <span>₵{cartSummary.total.toFixed(2)}</span>
-                    </div>
-                  </div>
+              {/* Summary */}
+              <div className="space-y-3 pt-4 border-t border-border/20">
+                <div className="flex justify-between text-sm">
+                  <span>Subtotal</span>
+                  <span>{formatMoney(cartSummary.subtotal)}</span>
                 </div>
+                <div className="flex justify-between text-sm">
+                  <span>Shipping</span>
+                  <span>{formatMoney(cartSummary.shippingCost)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Tax (12.5%)</span>
+                  <span>{formatMoney(cartSummary.tax)}</span>
+                </div>
+                <div className="flex justify-between font-semibold text-lg pt-3 border-t border-border/20">
+                  <span>Total</span>
+                  <span className="text-primary">{formatMoney(cartSummary.total)}</span>
+                </div>
+              </div>
 
-                {cartSummary.shippingCost === 0 && (
-                  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-sm text-green-800 font-medium">
-                      🎉 Free delivery on orders over ₵100!
-                    </p>
+              {/* Trust Badges
+ */}
+              <div className="grid grid-cols-3 gap-2 mt-6 pt-6 border-t border-border/20">
+                <div className="text-center">
+                  <Shield className="w-6 h-6 text-green-500 mx-auto mb-1" />
+                  <span className="text-xs text-muted-foreground">Secure</span>
+                </div>
+                <div className="text-center">
+                  <Truck className="w-6 h-6 text-blue-500 mx-auto mb-1" />
+                  <span className="text-xs text-muted-foreground">Fast</span>
+                </div>
+                <div className="text-center">
+                  <CheckCircle className="w-6 h-6 text-emerald-500 mx-auto mb-1" />
+                  <span className="text-xs text-muted-foreground">Reliable</span>
+                </div>
+              </div>
+
+              {/* Place Order Button */}
+              <Button
+                onClick={handleSubmit}
+                disabled={submitting}
+                className={`w-full h-14 mt-6 rounded-xl text-lg font-semibold ${Object.keys(errors).length > 0
+                  ? 'bg-red-600 hover:bg-red-700'
+                  : ''
+                  }`}
+              >
+                {submitting ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Processing...
+                  </div>
+                ) : Object.keys(errors).length > 0 ? (
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5" />
+                    Fix {Object.keys(errors).length} Error{Object.keys(errors).length > 1 ? 's' : ''}
+                  </div>
+                ) : selectedPaymentMethod ? (
+                  <div className="flex items-center gap-2">
+                    <Lock className="w-5 h-5" />
+                    Place Order - {formatMoney(cartSummary.total)}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="w-5 h-5" />
+                    Continue to Payment
                   </div>
                 )}
-              </div>
-            )}
+              </Button>
 
-            {/* Checkout Button */}
-            <Button
-              onClick={handleCheckout}
-              disabled={submitting || !cartItems.length}
-              className="w-full h-12 text-lg font-semibold"
-              size="lg"
-            >
-              {submitting ? (
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Processing...
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <CreditCard className="w-5 h-5" />
-                  Place Order - ₵{cartSummary?.total.toFixed(2)}
+              {Object.keys(errors).length > 0 && (
+                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+                  <div className="flex items-center gap-2 text-red-800 text-sm font-medium mb-2">
+                    <AlertCircle className="w-4 h-4" />
+                    Please fix the following errors:
+                  </div>
+                  <ul className="text-xs text-red-700 space-y-1 mb-3">
+                    {Object.entries(errors).map(([key, message]) => (
+                      <li key={key} className="flex items-center gap-1">
+                        <span className="w-1 h-1 bg-red-400 rounded-full"></span>
+                        {message}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="flex items-center gap-2 text-xs text-red-600">
+                    <CheckCircle className="w-3 h-3" />
+                    <span>Tip: Select a saved address above or fill in all required fields manually</span>
+                  </div>
                 </div>
               )}
-            </Button>
 
-            {/* Security Notice */}
-            <div className="text-center text-sm text-muted-foreground">
-              <Lock className="w-4 h-4 inline mr-1" />
-              Your information is secure and encrypted
+              <p className="text-xs text-muted-foreground text-center mt-3">
+                By placing this order, you agree to our terms and conditions
+              </p>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Payment Method Selection Modal */}
+      {
+        showPaymentStep && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-xl font-semibold">Select Payment Method</h2>
+                  <p className="text-sm text-muted-foreground">Choose how you'd like to pay</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowPaymentStep(false)}
+                  className="p-2"
+                >
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+
+              <PaymentMethodManager
+                onPaymentMethodSelect={(paymentMethod) => {
+                  setSelectedPaymentMethod(paymentMethod)
+                  setShowPaymentStep(false)
+                  setCurrentStep(3)
+                  toast.success('Payment method selected!')
+                }}
+                selectedPaymentMethodId={selectedPaymentMethod?.id}
+                className="mb-6"
+              />
+
+              {selectedPaymentMethod && (
+                <div className="p-4 bg-primary/5 rounded-xl border border-primary/20 mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle className="w-5 h-5 text-primary" />
+                    <span className="font-medium text-primary">Payment Method Selected</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    You can proceed with your order using the selected payment method.
+                  </p>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowPaymentStep(false)}
+                  className="flex-1 h-12 rounded-xl"
+                >
+                  Back to Details
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (selectedPaymentMethod) {
+                      setShowPaymentStep(false)
+                      handleSubmit()
+                    } else {
+                      toast.error('Please select a payment method')
+                    }
+                  }}
+                  disabled={!selectedPaymentMethod}
+                  className="flex-1 h-12 rounded-xl"
+                >
+                  Continue to Order
+                </Button>
+              </div>
+            </div>
+          </div>
+        )
+      }
 
       {/* Smart Phone Prompt */}
       <SmartPhonePrompt
@@ -514,14 +1024,13 @@ export default function CheckoutPage() {
         onClose={hidePhonePrompt}
         onSave={async (phone: string) => {
           await savePhoneNumber(phone)
-          // Update shipping info with the new phone number
-          setShippingInfo(prev => ({ ...prev, phone }))
+          setOrderPlacer(prev => ({ ...prev, phone }))
           setShowPhoneRequired(false)
         }}
         context="checkout"
         currentPhone={currentPhone}
         userName={userName}
       />
-    </div>
+    </div >
   )
 }

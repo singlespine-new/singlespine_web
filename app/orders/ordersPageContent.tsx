@@ -12,9 +12,7 @@ import {
   MapPin,
   Phone,
   Calendar,
-
   Search,
-
   Download,
   Star,
   MessageCircle,
@@ -22,9 +20,16 @@ import {
   Eye,
   MoreHorizontal,
   Copy,
-
   Package2,
-  ShoppingBag
+  ShoppingBag,
+  TrendingUp,
+  Shield,
+  Zap,
+  Filter,
+  SortDesc,
+  ChevronDown,
+  ExternalLink,
+  ArrowUpRight
 } from 'lucide-react'
 import Link from 'next/link'
 import toast from '@/components/ui/toast'
@@ -70,80 +75,7 @@ interface Order {
   notes?: string
 }
 
-const mockOrders: Order[] = [
-  {
-    id: '1',
-    orderNumber: 'ORD-2024-001',
-    status: 'shipped',
-    items: [
-      {
-        id: '1',
-        name: 'Premium Ghanaian Cocoa Powder',
-        quantity: 2,
-        price: 45.00,
-        image: '/placeholder-product.jpg',
-        variant: '500g'
-      },
-      {
-        id: '2',
-        name: 'Handwoven Kente Cloth',
-        quantity: 1,
-        price: 150.00,
-        image: '/placeholder-product.jpg',
-        variant: 'Traditional Pattern'
-      }
-    ],
-    total: 240.00,
-    subtotal: 195.00,
-    shippingCost: 35.00,
-    taxAmount: 10.00,
-    shippingInfo: {
-      name: 'John Doe',
-      phone: '+233 20 123 4567',
-      address: '123 Independence Avenue',
-      city: 'Accra',
-      region: 'Greater Accra',
-      postalCode: 'GA-123-4567'
-    },
-    paymentMethod: 'Mobile Money',
-    trackingNumber: 'GH123456789',
-    estimatedDelivery: '2-3 business days',
-    createdAt: '2024-01-15T10:30:00Z',
-    deliveryDate: '2024-01-20T14:00:00Z',
-    notes: 'Please call before delivery'
-  },
-  {
-    id: '2',
-    orderNumber: 'ORD-2024-002',
-    status: 'delivered',
-    items: [
-      {
-        id: '3',
-        name: 'African Print Ankara Fabric',
-        quantity: 3,
-        price: 25.00,
-        image: '/placeholder-product.jpg',
-        variant: 'Blue & Gold'
-      }
-    ],
-    total: 95.00,
-    subtotal: 75.00,
-    shippingCost: 15.00,
-    taxAmount: 5.00,
-    shippingInfo: {
-      name: 'Jane Smith',
-      phone: '+233 24 987 6543',
-      address: '456 Ring Road East',
-      city: 'Kumasi',
-      region: 'Ashanti',
-      postalCode: 'AK-456-7890'
-    },
-    paymentMethod: 'Credit Card',
-    trackingNumber: 'GH987654321',
-    createdAt: '2024-01-10T14:20:00Z',
-    deliveryDate: '2024-01-13T16:45:00Z'
-  }
-]
+// Real order fetching will replace mock data
 
 function OrdersPageContent() {
   const { isAuthenticated, isLoading } = useRequireAuth()
@@ -167,13 +99,32 @@ function OrdersPageContent() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      // Simulate loading orders
-      setTimeout(() => {
-        setOrders(mockOrders)
-        setLoading(false)
-      }, 1500)
+      fetchOrders()
     }
   }, [isAuthenticated])
+
+  const fetchOrders = async () => {
+    if (!isAuthenticated) return
+
+    try {
+      setLoading(true)
+      const response = await fetch('/api/orders')
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch orders')
+      }
+
+      const data = await response.json()
+      setOrders(data.orders || [])
+    } catch (error) {
+      console.error('Error fetching orders:', error)
+      toast.error('Failed to load orders')
+      // Show empty state if API fails
+      setOrders([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const getStatusInfo = (status: Order['status']) => {
     switch (status) {
@@ -235,15 +186,38 @@ function OrdersPageContent() {
         }
     }
   }
+  const formatMoney = (amount: number) =>
+    `₵${Number(amount ?? 0).toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'short',
+    return new Date(dateString).toLocaleDateString('en-GH', {
       year: 'numeric',
+      month: 'short',
+      day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
     })
+  }
+
+  const refetchOrders = async () => {
+    if (!isAuthenticated) return
+
+    try {
+      setLoading(true)
+      const response = await fetch('/api/orders')
+      if (!response.ok) {
+        throw new Error('Failed to refresh orders')
+      }
+
+      const data = await response.json()
+      setOrders(data.orders || [])
+      toast.success('Orders refreshed!')
+    } catch (error) {
+      console.error('Error refreshing orders:', error)
+      toast.error('Failed to refresh orders')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const copyOrderNumber = (orderNumber: string) => {
@@ -283,31 +257,53 @@ function OrdersPageContent() {
 
   if (isLoading || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-6xl mx-auto">
-            {/* Loading Skeleton */}
+      <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-primary/5">
+        <div className="container mx-auto px-4 py-6 md:py-8">
+          <div className="max-w-7xl mx-auto">
+            {/* Enhanced Loading Skeleton */}
             <div className="animate-pulse">
-              <div className="h-8 bg-muted rounded w-1/4 mb-4"></div>
-              <div className="h-12 bg-muted rounded w-1/2 mb-8"></div>
+              {/* Header Skeleton */}
+              <div className="mb-8">
+                <div className="h-4 bg-muted rounded w-32 mb-3"></div>
+                <div className="h-10 bg-muted rounded w-64 mb-4"></div>
+                <div className="h-5 bg-muted rounded w-96 mb-6"></div>
+              </div>
 
-              {/* Stats skeleton */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+              {/* Stats skeleton with better spacing */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
                 {[...Array(4)].map((_, i) => (
-                  <div key={i} className="bg-card rounded-xl p-6 border">
-                    <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
-                    <div className="h-8 bg-muted rounded w-1/2"></div>
+                  <div key={i} className="bg-card rounded-2xl p-4 md:p-6 border border-border/50 shadow-sm">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="h-3 bg-muted rounded w-16"></div>
+                      <div className="h-5 w-5 bg-muted rounded-full"></div>
+                    </div>
+                    <div className="h-8 bg-muted rounded w-12 mb-1"></div>
+                    <div className="h-3 bg-muted rounded w-20"></div>
                   </div>
                 ))}
               </div>
 
-              {/* Orders skeleton */}
-              <div className="space-y-6">
-                {[...Array(2)].map((_, i) => (
-                  <div key={i} className="bg-card rounded-xl p-6 border">
-                    <div className="h-6 bg-muted rounded w-1/3 mb-4"></div>
+              {/* Enhanced Orders skeleton */}
+              <div className="space-y-4 md:space-y-6">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="bg-card rounded-2xl p-4 md:p-6 border border-border/50 shadow-sm">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-6 bg-muted rounded w-32"></div>
+                        <div className="h-6 bg-muted rounded-full w-20"></div>
+                      </div>
+                      <div className="h-8 bg-muted rounded w-24 mt-2 md:mt-0"></div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+                      {[...Array(4)].map((_, j) => (
+                        <div key={j} className="h-4 bg-muted rounded"></div>
+                      ))}
+                    </div>
                     <div className="h-20 bg-muted rounded mb-4"></div>
-                    <div className="h-16 bg-muted rounded"></div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div className="h-24 bg-muted rounded"></div>
+                      <div className="h-24 bg-muted rounded"></div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -319,36 +315,55 @@ function OrdersPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-primary/5">
+      <div className="container mx-auto px-4 py-6 md:py-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Enhanced Header */}
           <div className="mb-8">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-              <Link href="/" className="hover:text-primary transition-colors">Home</Link>
-              <span>/</span>
-              <span className="text-foreground font-medium">Orders</span>
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
+              <Link href="/" className="hover:text-primary transition-colors font-medium">Home</Link>
+              <span className="text-muted-foreground/60">/</span>
+              <span className="text-foreground font-semibold">Orders</span>
             </div>
 
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-              <div>
-                <h1 className="text-4xl font-bold text-foreground flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-primary/10 rounded-xl">
-                    <Package className="w-8 h-8 text-primary" />
+            {/* Header Content */}
+            <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6 mb-6">
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-primary/20 rounded-2xl blur-xl"></div>
+                    <div className="relative p-3 bg-gradient-to-br from-primary/10 to-primary/20 rounded-2xl border border-primary/20">
+                      <Package className="w-8 h-8 text-primary" />
+                    </div>
                   </div>
-                  Your Orders
-                </h1>
-                <p className="text-muted-foreground text-lg">
-                  Track your orders and manage your purchases
-                </p>
+                  <div>
+                    <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
+                      Your Orders
+                    </h1>
+                    <p className="text-muted-foreground text-base md:text-lg">
+                      Track deliveries and manage your purchases
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <Button variant="outline" size="sm" className="hidden sm:flex">
-                  <Download className="w-4 h-4 mr-2" />
-                  Export
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={refetchOrders}
+                  disabled={loading}
+                  className="border-border/60 hover:border-primary/50"
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                  Refresh
                 </Button>
-                <Button asChild>
+                <Button variant="outline" size="sm" className="hidden md:flex border-border/60 hover:border-primary/50">
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Orders
+                </Button>
+                <Button asChild className="shadow-lg hover:shadow-xl transition-all duration-200">
                   <Link href="/products">
                     <ShoppingBag className="w-4 h-4 mr-2" />
                     Continue Shopping
@@ -356,176 +371,261 @@ function OrdersPageContent() {
                 </Button>
               </div>
             </div>
+
+            {/* Order System Notice */}
+            <div className="mb-6 p-4 bg-blue-50/50 border border-blue-200/50 rounded-xl">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Package className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-blue-900 mb-1">Order Tracking System</h3>
+                  <p className="text-sm text-blue-800">
+                    Your orders are now being tracked! All new orders will appear here with real-time status updates.
+                    Previous orders may show placeholder data as we complete the system setup.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Success Message */}
+          {/* Enhanced Success Message */}
           {success === 'true' && (
-            <div className="mb-8 p-6 bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200 rounded-xl shadow-sm">
-              <div className="flex items-start gap-4">
-                <div className="p-2 bg-emerald-500 rounded-full">
-                  <CheckCircle className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-emerald-900 text-lg mb-1">Order Placed Successfully!</h3>
-                  <p className="text-emerald-800 mb-3">
-                    Your order has been received and is being processed. You&apos;ll receive updates via SMS and email.
-                  </p>
-                  <Button variant="outline" size="sm" className="bg-white">
-                    <Eye className="w-4 h-4 mr-2" />
-                    View Order Details
-                  </Button>
+            <div className="mb-8 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-green-500/10 blur-3xl"></div>
+              <div className="relative p-6 md:p-8 bg-gradient-to-r from-emerald-50/90 to-green-50/90 border border-emerald-200/60 rounded-2xl shadow-lg backdrop-blur-sm">
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-lg"></div>
+                    <div className="relative p-3 bg-gradient-to-br from-emerald-500 to-green-500 rounded-full shadow-lg">
+                      <CheckCircle className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1 space-y-3">
+                    <h3 className="font-bold text-emerald-900 text-xl mb-2">🎉 Order Placed Successfully!</h3>
+                    <p className="text-emerald-800 text-base leading-relaxed">
+                      Your order has been received and is being processed. You&apos;ll receive real-time updates via SMS and email throughout the delivery process.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button variant="outline" size="sm" className="bg-white/80 hover:bg-white border-emerald-200 text-emerald-700">
+                        <Eye className="w-4 h-4 mr-2" />
+                        View Order Details
+                      </Button>
+                      <Button variant="outline" size="sm" className="bg-white/80 hover:bg-white border-emerald-200 text-emerald-700">
+                        <Truck className="w-4 h-4 mr-2" />
+                        Track Package
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-card rounded-xl p-6 border shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-muted-foreground text-sm font-medium">Total Orders</span>
-                <Package2 className="w-5 h-5 text-blue-500" />
+          {/* Enhanced Stats Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+            <div className="group relative overflow-hidden bg-gradient-to-br from-card to-card/80 rounded-2xl p-4 md:p-6 border border-border/50 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="relative">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-muted-foreground text-sm font-medium">Total Orders</span>
+                  <div className="p-2 bg-blue-500/10 rounded-xl">
+                    <Package2 className="w-4 h-4 md:w-5 md:h-5 text-blue-500" />
+                  </div>
+                </div>
+                <div className="text-2xl md:text-3xl font-bold text-foreground mb-1">{stats.total}</div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <TrendingUp className="w-3 h-3" />
+                  <span>All time</span>
+                </div>
               </div>
-              <div className="text-2xl font-bold text-foreground">{stats.total}</div>
             </div>
 
-            <div className="bg-card rounded-xl p-6 border shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-muted-foreground text-sm font-medium">Delivered</span>
-                <CheckCircle className="w-5 h-5 text-emerald-500" />
+            <div className="group relative overflow-hidden bg-gradient-to-br from-card to-card/80 rounded-2xl p-4 md:p-6 border border-border/50 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="relative">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-muted-foreground text-sm font-medium">Delivered</span>
+                  <div className="p-2 bg-emerald-500/10 rounded-xl">
+                    <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-emerald-500" />
+                  </div>
+                </div>
+                <div className="text-2xl md:text-3xl font-bold text-foreground mb-1">{stats.delivered}</div>
+                <div className="flex items-center gap-1 text-xs text-emerald-600">
+                  <Shield className="w-3 h-3" />
+                  <span>Successfully</span>
+                </div>
               </div>
-              <div className="text-2xl font-bold text-foreground">{stats.delivered}</div>
             </div>
 
-            <div className="bg-card rounded-xl p-6 border shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-muted-foreground text-sm font-medium">Pending</span>
-                <Clock className="w-5 h-5 text-amber-500" />
+            <div className="group relative overflow-hidden bg-gradient-to-br from-card to-card/80 rounded-2xl p-4 md:p-6 border border-border/50 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="relative">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-muted-foreground text-sm font-medium">Pending</span>
+                  <div className="p-2 bg-amber-500/10 rounded-xl">
+                    <Clock className="w-4 h-4 md:w-5 md:h-5 text-amber-500" />
+                  </div>
+                </div>
+                <div className="text-2xl md:text-3xl font-bold text-foreground mb-1">{stats.pending}</div>
+                <div className="flex items-center gap-1 text-xs text-amber-600">
+                  <Zap className="w-3 h-3" />
+                  <span>Processing</span>
+                </div>
               </div>
-              <div className="text-2xl font-bold text-foreground">{stats.pending}</div>
             </div>
 
-            <div className="bg-card rounded-xl p-6 border shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-muted-foreground text-sm font-medium">Total Spent</span>
-                <Star className="w-5 h-5 text-amber-500" />
+            <div className="group relative overflow-hidden bg-gradient-to-br from-card to-card/80 rounded-2xl p-4 md:p-6 border border-border/50 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="relative">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-muted-foreground text-sm font-medium">Total Spent</span>
+                  <div className="p-2 bg-primary/10 rounded-xl">
+                    <Star className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+                  </div>
+                </div>
+                <div className="text-2xl md:text-3xl font-bold text-foreground mb-1">₵{stats.totalSpent.toFixed(2)}</div>
+                <div className="flex items-center gap-1 text-xs text-primary">
+                  <TrendingUp className="w-3 h-3" />
+                  <span>Lifetime value</span>
+                </div>
               </div>
-              <div className="text-2xl font-bold text-foreground">₵{stats.totalSpent.toFixed(2)}</div>
             </div>
           </div>
 
-          {/* Filters and Search */}
-          <div className="mb-8 p-6 bg-card rounded-xl border shadow-sm">
+          {/* Enhanced Filters and Search */}
+          <div className="mb-8 p-4 md:p-6 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-lg backdrop-blur-sm">
             <div className="flex flex-col lg:flex-row gap-4">
               <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <div className="relative group">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 group-focus-within:text-primary transition-colors" />
                   <input
                     type="text"
-                    placeholder="Search orders by number or product name..."
+                    placeholder="Search orders by number, product name, or recipient..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                    className="w-full pl-12 pr-4 py-3 md:py-4 border border-border/60 rounded-xl bg-background/80 focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all duration-200 placeholder:text-muted-foreground/70"
                   />
                 </div>
               </div>
 
-              <div className="flex gap-3">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-4 py-3 border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-                >
-                  <option value="all">All Status</option>
-                  <option value="pending">Pending</option>
-                  <option value="confirmed">Confirmed</option>
-                  <option value="preparing">Preparing</option>
-                  <option value="shipped">Shipped</option>
-                  <option value="delivered">Delivered</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative">
+                  <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="pl-10 pr-8 py-3 md:py-4 border border-border/60 rounded-xl bg-background/80 focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all duration-200 appearance-none cursor-pointer min-w-[140px]"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="preparing">Preparing</option>
+                    <option value="shipped">Shipped</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" />
+                </div>
 
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as 'newest' | 'oldest' | 'amount')}
-                  className="px-4 py-3 border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-                >
-                  <option value="newest">Newest First</option>
-                  <option value="oldest">Oldest First</option>
-                  <option value="amount">Highest Amount</option>
-                </select>
+                <div className="relative">
+                  <SortDesc className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as 'newest' | 'oldest' | 'amount')}
+                    className="pl-10 pr-8 py-3 md:py-4 border border-border/60 rounded-xl bg-background/80 focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all duration-200 appearance-none cursor-pointer min-w-[160px]"
+                  >
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="amount">Highest Amount</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" />
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Orders List */}
+          {/* Enhanced Orders List */}
           {filteredOrders.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="p-6 bg-muted/30 rounded-full w-24 h-24 mx-auto mb-6 flex items-center justify-center">
-                <Package className="w-12 h-12 text-muted-foreground" />
+            <div className="text-center py-16 md:py-24">
+              <div className="relative mb-8">
+                <div className="absolute inset-0 bg-primary/10 rounded-full blur-3xl w-32 h-32 mx-auto"></div>
+                <div className="relative p-8 bg-gradient-to-br from-muted/20 to-muted/40 rounded-full w-32 h-32 mx-auto flex items-center justify-center border border-border/50">
+                  <Package className="w-16 h-16 text-muted-foreground" />
+                </div>
               </div>
-              <h2 className="text-2xl font-bold text-foreground mb-4">
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
                 {searchQuery || statusFilter !== 'all' ? 'No orders found' : 'No orders yet'}
               </h2>
-              <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+              <p className="text-muted-foreground mb-8 max-w-lg mx-auto text-lg leading-relaxed">
                 {searchQuery || statusFilter !== 'all'
-                  ? "Try adjusting your search or filters to find what you're looking for."
-                  : 'When you place your first order, it will appear here. Start shopping to send some love to Ghana!'
+                  ? "Try adjusting your search criteria or filters to find what you're looking for."
+                  : 'Your orders will appear here once you place them. Send love to your family and friends in Ghana by shopping our amazing products!'
                 }
               </p>
               {!searchQuery && statusFilter === 'all' && (
-                <Button asChild size="lg" className="shadow-lg hover:shadow-xl transition-shadow">
-                  <Link href="/products">
-                    <ShoppingBag className="w-5 h-5 mr-2" />
-                    Start Shopping
-                  </Link>
-                </Button>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                  <Button asChild size="lg" className="shadow-lg hover:shadow-xl transition-all duration-200">
+                    <Link href="/products">
+                      <ShoppingBag className="w-5 h-5 mr-2" />
+                      Start Shopping
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" size="lg">
+                    <Link href="/how-it-works">
+                      Learn How It Works
+                    </Link>
+                  </Button>
+                </div>
               )}
+
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-6">
               {filteredOrders.map((order) => {
                 const statusInfo = getStatusInfo(order.status)
                 const StatusIcon = statusInfo.icon
 
                 return (
-                  <div key={order.id} className="bg-card border border-border rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
-                    {/* Order Header */}
-                    <div className="p-6 border-b border-border bg-gradient-to-r from-muted/30 to-muted/10">
+                  <div key={order.id} className="group bg-gradient-to-br from-card to-card/80 border border-border/50 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden hover:-translate-y-1">
+                    {/* Enhanced Order Header */}
+                    <div className="p-4 md:p-6 border-b border-border/50 bg-gradient-to-r from-muted/20 to-muted/10">
                       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-3">
-                            <h3 className="text-xl font-bold text-foreground">
-                              #{order.orderNumber}
-                            </h3>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => copyOrderNumber(order.orderNumber)}
-                              className="h-6 w-6 p-0"
-                            >
-                              <Copy className="w-3 h-3" />
-                            </Button>
-                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border ${statusInfo.bg} ${statusInfo.color}`}>
+                        <div className="flex-1 space-y-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                            <div className="flex items-center gap-3">
+                              <h3 className="text-lg md:text-xl font-bold text-foreground">
+                                #{order.orderNumber}
+                              </h3>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyOrderNumber(order.orderNumber)}
+                                className="h-7 w-7 p-0 hover:bg-primary/10 rounded-lg"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </Button>
+                            </div>
+                            <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border ${statusInfo.bg} ${statusInfo.color} shadow-sm`}>
                               <StatusIcon className="w-4 h-4" />
                               {statusInfo.label}
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
                             <div className="flex items-center gap-2 text-muted-foreground">
-                              <Calendar className="w-4 h-4" />
+                              <Calendar className="w-4 h-4 text-primary/60" />
                               <span>Ordered: {formatDate(order.createdAt)}</span>
                             </div>
                             {order.trackingNumber && (
                               <div className="flex items-center gap-2 text-muted-foreground">
-                                <Package className="w-4 h-4" />
+                                <Package className="w-4 h-4 text-primary/60" />
                                 <span>Tracking: {order.trackingNumber}</span>
                               </div>
                             )}
                             {order.estimatedDelivery && (
                               <div className="flex items-center gap-2 text-muted-foreground">
-                                <Clock className="w-4 h-4" />
+                                <Clock className="w-4 h-4 text-primary/60" />
                                 <span>ETA: {order.estimatedDelivery}</span>
                               </div>
                             )}
@@ -535,9 +635,9 @@ function OrdersPageContent() {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-4">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                           <div className="text-right">
-                            <div className="text-3xl font-bold text-foreground">₵{order.total.toFixed(2)}</div>
+                            <div className="text-2xl md:text-3xl font-bold text-foreground">₵{order.total.toFixed(2)}</div>
                             <div className="text-sm text-muted-foreground">
                               {order.items.reduce((sum, item) => sum + item.quantity, 0)} items
                             </div>
@@ -545,40 +645,41 @@ function OrdersPageContent() {
 
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="outline" size="sm">
+                              <Button variant="outline" size="sm" className="border-border/60 hover:border-primary/50 shadow-sm">
                                 <MoreHorizontal className="w-4 h-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent align="end" className="w-48">
                               <DropdownMenuLabel>Order Actions</DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem>
+                              <DropdownMenuItem className="cursor-pointer">
                                 <Eye className="w-4 h-4 mr-2" />
                                 View Details
                               </DropdownMenuItem>
                               {order.trackingNumber && (
-                                <DropdownMenuItem>
+                                <DropdownMenuItem className="cursor-pointer">
                                   <Truck className="w-4 h-4 mr-2" />
                                   Track Package
+                                  <ExternalLink className="w-3 h-3 ml-auto" />
                                 </DropdownMenuItem>
                               )}
                               {order.status === 'delivered' && (
                                 <>
-                                  <DropdownMenuItem>
+                                  <DropdownMenuItem className="cursor-pointer">
                                     <RefreshCw className="w-4 h-4 mr-2" />
-                                    Reorder
+                                    Reorder Items
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem>
+                                  <DropdownMenuItem className="cursor-pointer">
                                     <Star className="w-4 h-4 mr-2" />
                                     Leave Review
                                   </DropdownMenuItem>
                                 </>
                               )}
-                              <DropdownMenuItem>
+                              <DropdownMenuItem className="cursor-pointer">
                                 <Download className="w-4 h-4 mr-2" />
                                 Download Invoice
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem className="cursor-pointer">
                                 <MessageCircle className="w-4 h-4 mr-2" />
                                 Contact Support
                               </DropdownMenuItem>
@@ -588,90 +689,116 @@ function OrdersPageContent() {
                       </div>
                     </div>
 
-                    {/* Order Items */}
-                    <div className="p-6">
+                    {/* Enhanced Order Items */}
+                    <div className="p-4 md:p-6">
                       <h4 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                        <Package2 className="w-4 h-4" />
+                        <Package2 className="w-5 h-5 text-primary" />
                         Order Items
+                        <span className="text-sm font-normal text-muted-foreground">
+                          ({order.items.length} {order.items.length === 1 ? 'item' : 'items'})
+                        </span>
                       </h4>
-                      <div className="space-y-4">
+                      <div className="space-y-3">
                         {order.items.map((item) => (
-                          <div key={item.id} className="flex items-center gap-4 p-4 bg-muted/20 rounded-lg hover:bg-muted/30 transition-colors">
-                            <div className="relative w-16 h-16 flex-shrink-0">
+                          <div key={item.id} className="flex items-center gap-4 p-3 md:p-4 bg-gradient-to-r from-muted/10 to-muted/20 rounded-xl hover:from-muted/20 hover:to-muted/30 transition-all duration-200 border border-border/30">
+                            <div className="relative w-16 h-16 md:w-20 md:h-20 flex-shrink-0">
                               <Image
                                 src={item.image}
                                 alt={item.name}
                                 fill
-                                className="object-cover rounded-lg"
+                                className="object-cover rounded-lg shadow-sm"
                               />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h4 className="font-medium text-foreground truncate">{item.name}</h4>
+                              <h4 className="font-semibold text-foreground truncate text-sm md:text-base">{item.name}</h4>
                               {item.variant && (
-                                <p className="text-sm text-muted-foreground">{item.variant}</p>
+                                <p className="text-sm text-muted-foreground mt-1">{item.variant}</p>
                               )}
                               <div className="flex items-center justify-between mt-2">
                                 <span className="text-sm text-muted-foreground">Qty: {item.quantity}</span>
-                                <span className="font-bold text-foreground">₵{(item.price * item.quantity).toFixed(2)}</span>
+                                <span className="font-bold text-foreground text-sm md:text-base">₵{(item.price * item.quantity).toFixed(2)}</span>
                               </div>
                             </div>
                           </div>
                         ))}
                       </div>
 
-                      {/* Order Summary */}
-                      <div className="mt-6 pt-6 border-t border-border">
+                      {/* Enhanced Order Summary */}
+                      <div className="mt-6 pt-6 border-t border-border/50">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                          {/* Shipping Info */}
-                          <div>
+                          {/* Enhanced Shipping Info */}
+                          <div className="space-y-4">
                             <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                              <MapPin className="w-4 h-4" />
+                              <MapPin className="w-5 h-5 text-primary" />
                               Delivery Address
                             </h4>
-                            <div className="bg-muted/20 rounded-lg p-4">
-                              <div className="font-medium text-foreground mb-1">{order.shippingInfo.name}</div>
+                            <div className="bg-gradient-to-br from-muted/10 to-muted/20 rounded-xl p-4 border border-border/30">
+                              <div className="font-semibold text-foreground mb-2">{order.shippingInfo.name}</div>
                               <div className="text-sm text-muted-foreground space-y-1">
-                                <div>{order.shippingInfo.address}</div>
+                                <div className="font-medium">{order.shippingInfo.address}</div>
                                 <div>{order.shippingInfo.city}, {order.shippingInfo.region}</div>
                                 {order.shippingInfo.postalCode && (
-                                  <div>{order.shippingInfo.postalCode}</div>
+                                  <div className="font-mono text-xs bg-muted/50 px-2 py-1 rounded inline-block">
+                                    {order.shippingInfo.postalCode}
+                                  </div>
                                 )}
-                                <div className="flex items-center gap-1 pt-2">
-                                  <Phone className="w-3 h-3" />
-                                  {order.shippingInfo.phone}
+                                <div className="flex items-center gap-2 pt-2 mt-3 border-t border-border/30">
+                                  <Phone className="w-4 h-4 text-primary" />
+                                  <span className="font-medium">{order.shippingInfo.phone}</span>
                                 </div>
                               </div>
                             </div>
                             {order.notes && (
-                              <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                                <div className="text-sm font-medium text-amber-800 mb-1">Delivery Notes:</div>
-                                <div className="text-sm text-amber-700">{order.notes}</div>
+                              <div className="p-4 bg-gradient-to-r from-amber-50/80 to-orange-50/80 border border-amber-200/60 rounded-xl">
+                                <div className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                                  <MessageCircle className="w-4 h-4" />
+                                  Delivery Notes:
+                                </div>
+                                <div className="text-sm text-amber-700 leading-relaxed">{order.notes}</div>
                               </div>
                             )}
                           </div>
 
-                          {/* Price Breakdown */}
-                          <div>
-                            <h4 className="font-semibold text-foreground mb-3">Order Summary</h4>
-                            <div className="bg-muted/20 rounded-lg p-4 space-y-3">
+                          {/* Enhanced Price Breakdown */}
+                          <div className="space-y-4">
+                            <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                              <Star className="w-5 h-5 text-primary" />
+                              Order Summary
+                            </h4>
+                            <div className="bg-gradient-to-br from-muted/10 to-muted/20 rounded-xl p-4 border border-border/30 space-y-3">
                               <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Subtotal</span>
-                                <span className="text-foreground">₵{order.subtotal.toFixed(2)}</span>
+                                <span className="font-medium text-foreground">₵{order.subtotal.toFixed(2)}</span>
                               </div>
                               <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Shipping</span>
-                                <span className="text-foreground">₵{order.shippingCost.toFixed(2)}</span>
+                                <span className="font-medium text-foreground">₵{order.shippingCost.toFixed(2)}</span>
                               </div>
                               <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Tax</span>
-                                <span className="text-foreground">₵{order.taxAmount.toFixed(2)}</span>
+                                <span className="text-muted-foreground">Tax (12.5%)</span>
+                                <span className="font-medium text-foreground">₵{order.taxAmount.toFixed(2)}</span>
                               </div>
-                              <div className="border-t border-border pt-3">
+                              <div className="border-t border-border/50 pt-3">
                                 <div className="flex justify-between font-bold text-lg">
-                                  <span className="text-foreground">Total</span>
-                                  <span className="text-foreground">₵{order.total.toFixed(2)}</span>
+                                  <span className="text-foreground">Total Amount</span>
+                                  <span className="text-primary">₵{order.total.toFixed(2)}</span>
                                 </div>
                               </div>
+                            </div>
+
+                            {/* Quick Actions */}
+                            <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                              {order.trackingNumber && (
+                                <Button variant="outline" size="sm" className="flex-1">
+                                  <Truck className="w-4 h-4 mr-2" />
+                                  Track Order
+                                  <ArrowUpRight className="w-3 h-3 ml-auto" />
+                                </Button>
+                              )}
+                              <Button variant="outline" size="sm" className="flex-1">
+                                <Download className="w-4 h-4 mr-2" />
+                                Invoice
+                              </Button>
                             </div>
                           </div>
                         </div>
@@ -683,26 +810,46 @@ function OrdersPageContent() {
             </div>
           )}
 
-          {/* Help Section */}
-          <div className="mt-12 p-8 bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-xl">
-            <div className="text-center max-w-2xl mx-auto">
-              <h3 className="text-2xl font-bold text-foreground mb-3">Need Help with Your Order?</h3>
-              <p className="text-muted-foreground mb-6 text-lg">
-                Our customer support team is here to assist you with any questions about your orders, shipping, or returns.
-              </p>
-              <div className="flex flex-wrap justify-center gap-4">
-                <Button variant="outline" className="bg-white shadow-sm hover:shadow-md">
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  Live Chat Support
-                </Button>
-                <Button variant="outline" className="bg-white shadow-sm hover:shadow-md">
-                  <Phone className="w-4 h-4 mr-2" />
-                  Call Us: +233 20 123 4567
-                </Button>
-                <Button variant="outline" className="bg-white shadow-sm hover:shadow-md">
-                  <Truck className="w-4 h-4 mr-2" />
-                  Shipping Info
-                </Button>
+          {/* Enhanced Help Section */}
+          <div className="mt-12 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-secondary/10 blur-3xl"></div>
+            <div className="relative p-6 md:p-8 bg-gradient-to-r from-primary/5 to-secondary/10 border border-primary/20 rounded-2xl backdrop-blur-sm">
+              <div className="text-center max-w-3xl mx-auto">
+                <div className="flex items-center justify-center mb-6">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-primary/20 rounded-full blur-lg"></div>
+                    <div className="relative p-4 bg-gradient-to-br from-primary/10 to-primary/20 rounded-full border border-primary/30">
+                      <MessageCircle className="w-8 h-8 text-primary" />
+                    </div>
+                  </div>
+                </div>
+                <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-4">Need Help with Your Order?</h3>
+                <p className="text-muted-foreground mb-8 text-base md:text-lg leading-relaxed">
+                  Our dedicated customer support team is here to assist you with any questions about your orders, shipping, or returns. We're available 24/7 to help!
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Button variant="outline" className="bg-white/80 hover:bg-white shadow-sm hover:shadow-lg transition-all duration-200 border-primary/20 p-4 h-auto">
+                    <div className="flex flex-col items-center gap-2">
+                      <MessageCircle className="w-5 h-5 text-primary" />
+                      <span className="font-medium">Live Chat</span>
+                      <span className="text-xs text-muted-foreground">Available 24/7</span>
+                    </div>
+                  </Button>
+                  <Button variant="outline" className="bg-white/80 hover:bg-white shadow-sm hover:shadow-lg transition-all duration-200 border-primary/20 p-4 h-auto">
+                    <div className="flex flex-col items-center gap-2">
+                      <Phone className="w-5 h-5 text-primary" />
+                      <span className="font-medium">Call Us</span>
+                      <span className="text-xs text-muted-foreground">+233 20 123 4567</span>
+                    </div>
+                  </Button>
+                  <Button variant="outline" className="bg-white/80 hover:bg-white shadow-sm hover:shadow-lg transition-all duration-200 border-primary/20 p-4 h-auto">
+                    <div className="flex flex-col items-center gap-2">
+                      <Truck className="w-5 h-5 text-primary" />
+                      <span className="font-medium">Shipping Info</span>
+                      <span className="text-xs text-muted-foreground">Track & FAQs</span>
+                    </div>
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

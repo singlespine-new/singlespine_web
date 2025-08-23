@@ -340,7 +340,7 @@ export default function ProductCard({
       onClick={handleClick}
     >
       {/* Image Container */}
-      <div className="relative aspect-[4/3] overflow-hidden bg-secondary/20">
+      <div className="relative aspect-square overflow-hidden bg-secondary/20">
         {imageLoading && (
           <div className="absolute inset-0 bg-secondary/30 animate-pulse flex items-center justify-center">
             <Package className="w-12 h-12 text-secondary-foreground/50" />
@@ -370,16 +370,16 @@ export default function ProductCard({
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
         {/* Top Badges */}
-        <div className="absolute top-4 left-4 flex flex-col gap-2">
+        <div className="absolute top-2 left-2 flex flex-col gap-1">
           {product.isFeatured && (
-            <div className="bg-primary/90 backdrop-blur-sm text-primary-foreground px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1 shadow-lg">
-              <Star className="w-3 h-3" />
+            <div className="bg-primary/90 backdrop-blur-sm text-primary-foreground px-2 py-0.5 rounded text-xs font-semibold flex items-center gap-1 shadow-lg">
+              <Star className="w-2.5 h-2.5" />
               Featured
             </div>
           )}
           {discount > 0 && (
-            <div className="bg-destructive/90 backdrop-blur-sm text-destructive-foreground px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg">
-              -{discount}% OFF
+            <div className="bg-destructive/90 backdrop-blur-sm text-destructive-foreground px-2 py-0.5 rounded text-xs font-semibold shadow-lg">
+              -{discount}%
             </div>
           )}
           {/* {isLowStock && !isOutOfStock && (
@@ -395,46 +395,36 @@ export default function ProductCard({
         </div>
 
         {/* Top Right Actions */}
-        <div className="absolute top-4 right-4 flex gap-2">
+        <div className="absolute top-2 right-2 flex gap-1">
           <button
             onClick={handleWishlist}
             className={cn(
-              "p-2.5 rounded-full transition-all duration-200 backdrop-blur-sm shadow-lg",
+              "p-1.5 rounded-full transition-all duration-200 backdrop-blur-sm shadow-lg",
               "bg-card/90 hover:bg-card border border-border/50",
               isWishlisted
                 ? "text-red-500 bg-red-50/90 border-red-200/50"
                 : "text-muted-foreground hover:text-red-500"
             )}
           >
-            <Heart className={cn("w-4 h-4", isWishlisted && "fill-current")} />
+            <Heart className={cn("w-3 h-3", isWishlisted && "fill-current")} />
           </button>
         </div>
 
         {/* Bottom Actions - Show on Hover */}
-        <div className="absolute bottom-4 left-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-          {/* <Button
-            onClick={handleClick}
-            variant="secondary"
-            size="sm"
-            className="flex-1 bg-card/90 backdrop-blur-sm border border-border/50 hover:bg-card text-foreground shadow-lg"
-          >
-            <Eye className="w-4 h-4 mr-2" />
-            Quick View
-          </Button> */}
-
+        <div className="absolute bottom-2 left-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
           {showQuickAdd && !isOutOfStock && (
             <Button
               onClick={handleQuickAdd}
               disabled={isLoading}
               size="sm"
-              className="flex-1 bg-primary/90 backdrop-blur-sm hover:bg-primary text-primary-foreground shadow-lg"
+              className="flex-1 bg-primary/90 backdrop-blur-sm hover:bg-primary text-primary-foreground shadow-lg text-xs h-7"
             >
               {isLoading ? (
-                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
-                  <ShoppingCart className="w-4 h-4 mr-2" />
-                  Add to Cart
+                  <ShoppingCart className="w-3 h-3 mr-1" />
+                  Add
                 </>
               )}
             </Button>
@@ -443,8 +433,8 @@ export default function ProductCard({
 
         {/* Image Indicators */}
         {product.images.length > 1 && (
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-1.5">
-            {product.images.slice(0, 5).map((_, index) => (
+          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-1">
+            {product.images.slice(0, 3).map((_, index) => (
               <button
                 key={index}
                 onClick={(e) => {
@@ -452,41 +442,36 @@ export default function ProductCard({
                   setCurrentImageIndex(index)
                 }}
                 className={cn(
-                  "w-2 h-2 rounded-full transition-all duration-200",
+                  "w-1.5 h-1.5 rounded-full transition-all duration-200",
                   index === currentImageIndex
                     ? "bg-primary shadow-lg"
                     : "bg-white/60 hover:bg-white/80"
                 )}
               />
             ))}
-            {product.images.length > 5 && (
-              <div className="text-white/80 text-xs ml-1">+{product.images.length - 5}</div>
+            {product.images.length > 3 && (
+              <div className="text-white/80 text-xs ml-1">+{product.images.length - 3}</div>
             )}
           </div>
         )}
       </div>
 
       {/* Content */}
-      <div className="p-5 space-y-4">
+      <div className="p-3 space-y-2">
         {/* Header Section */}
-        <div className="space-y-2">
-          <div className="flex items-start justify-between gap-2">
+        <div className="space-y-1">
+          <div className="flex items-start justify-between gap-1">
             <div className="min-w-0 flex-1">
               <Link href={`/products/${product.slug}`}>
-                <h3 className="font-bold text-lg text-foreground line-clamp-2 hover:text-primary transition-colors leading-tight">
+                <h3 className="font-semibold text-sm text-foreground line-clamp-2 hover:text-primary transition-colors leading-tight">
                   {product.name}
                 </h3>
               </Link>
-              {product.shortDescription && (
-                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                  {product.shortDescription}
-                </p>
-              )}
             </div>
 
             {product.rating && (
-              <div className="flex items-center gap-1 bg-secondary/50 px-2 py-1 rounded-lg flex-shrink-0">
-                <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+              <div className="flex items-center gap-0.5 bg-secondary/50 px-1.5 py-0.5 rounded flex-shrink-0">
+                <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
                 <span className="font-semibold text-xs">{product.rating.toFixed(1)}</span>
               </div>
             )}
@@ -495,59 +480,43 @@ export default function ProductCard({
 
         {/* Meta Info */}
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <MapPin className="w-3 h-3" />
-            <span>{product.origin}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Truck className="w-3 h-3" />
-            <span>{getDeliveryTime()}</span>
+          <div className="flex items-center gap-0.5">
+            <MapPin className="w-2.5 h-2.5" />
+            <span className="truncate">{product.origin}</span>
           </div>
         </div>
 
         {/* Availability */}
         <div className={cn(
-          "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border",
+          "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border",
           availability.color, availability.bgColor, availability.borderColor
         )}>
           {availability.text}
           {isLowStock && !isOutOfStock && (
-            <span className="ml-1 font-normal">• {product.stock} left</span>
+            <span className="ml-1 font-normal">• {product.stock}</span>
           )}
         </div>
 
-        {/* Tags */}
-        {product.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {product.tags.slice(0, 3).map((tag) => (
-              <span
-                key={tag}
-                className="px-2 py-1 bg-secondary/40 text-secondary-foreground text-xs rounded-md font-medium"
-              >
-                {tag}
-              </span>
-            ))}
-            {product.tags.length > 3 && (
-              <span className="px-2 py-1 bg-muted/50 text-muted-foreground text-xs rounded-md">
-                +{product.tags.length - 3}
-              </span>
-            )}
-          </div>
-        )}
+        {/* Tags - Hide in grid view to save space */}
 
         {/* Price and Vendor */}
-        <div className="space-y-2 pt-2 border-t border-border/50">
+        <div className="space-y-1 pt-1 border-t border-border/50">
           <div className="flex items-center justify-between">
-            {formatPrice(product.price, product.comparePrice)}
+            <div className="flex items-center gap-1">
+              <span className="text-base font-bold text-foreground">₵{product.price.toFixed(2)}</span>
+              {product.comparePrice && product.comparePrice > product.price && (
+                <span className="text-xs text-muted-foreground line-through">₵{product.comparePrice.toFixed(2)}</span>
+              )}
+            </div>
             {product.reviewCount && (
               <span className="text-xs text-muted-foreground">
-                {product.reviewCount} review{product.reviewCount !== 1 ? 's' : ''}
+                ({product.reviewCount})
               </span>
             )}
           </div>
 
           {product.vendor && (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground truncate">
               by <span className="font-medium text-primary">{product.vendor}</span>
             </p>
           )}

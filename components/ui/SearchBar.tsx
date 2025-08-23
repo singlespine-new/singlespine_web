@@ -14,6 +14,7 @@ interface SearchBarProps extends React.InputHTMLAttributes<HTMLInputElement> {
   size?: "sm" | "md" | "lg";
   clearButton?: boolean;
   loading?: boolean;
+  debounceOnChange?: number;
   icon?: React.ReactNode;
 }
 
@@ -30,10 +31,34 @@ const SearchBar = React.forwardRef<HTMLInputElement, SearchBarProps>(
     loading = false,
     onChange,
     icon,
+    debounceOnChange,
     ...props
   }, ref) => {
     const [query, setQuery] = React.useState(props.value || props.defaultValue || "");
     const [focused, setFocused] = React.useState(false);
+
+    // Remove value/onChange from props to avoid overriding internal state-controlled value
+    const { value: controlledValue, onChange: _onChangeIgnored, defaultValue: _defaultValueIgnored, ...restProps } = props as any;
+
+    // Determine if component is controlled by parent
+    const isControlled = typeof controlledValue !== 'undefined' && typeof onChange === 'function';
+
+    // Keep internal query in sync only in controlled mode
+    React.useEffect(() => {
+      if (isControlled && controlledValue !== query) {
+        setQuery(controlledValue as string);
+      }
+    }, [isControlled, controlledValue, query]);
+
+    // Debounced onSearch when typing (opt-in via debounceOnChange)
+    const debounceMs = typeof debounceOnChange === 'number' ? debounceOnChange : undefined;
+    React.useEffect(() => {
+      if (!debounceMs || !onSearch) return;
+      const handle = window.setTimeout(() => {
+        onSearch(query as string);
+      }, debounceMs);
+      return () => window.clearTimeout(handle);
+    }, [query, debounceMs, onSearch]);
 
     // Handle input change
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -108,11 +133,11 @@ const SearchBar = React.forwardRef<HTMLInputElement, SearchBarProps>(
             },
             className
           )}
-          value={query}
+          value={isControlled ? (controlledValue as string) : query}
           onChange={handleChange}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          {...props}
+          {...restProps}
         />
 
         {/* Loading Spinner */}

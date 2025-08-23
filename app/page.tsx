@@ -1,10 +1,23 @@
+'use client'
 import Image from "next/image";
 import { Button } from "@/components/ui/Button"; // Corrected import path
 import { SearchBar } from "@/components/ui/SearchBar";
 import { MapPin } from "lucide-react"; // Import from lucide-react
 import Link from "next/link";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-utils";
 
 export default function Home() {
+  const router = useRouter()
+  const { isAuthenticated, isLoading } = useAuth()
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace('/products')
+    }
+  }, [isLoading, isAuthenticated, router])
+
   return (
     <>
       {/* Hero Section with Background Image */}
@@ -16,7 +29,7 @@ export default function Home() {
             alt="Family receiving a gift package in Ghana"
             fill
             priority
-            quality={100}
+            quality={70}
             // Apply object-right by default (mobile), then object-center from 'md' breakpoint up
             // height={'300'}
             className="object-cover object-right md:object-center"

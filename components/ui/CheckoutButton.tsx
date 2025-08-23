@@ -137,7 +137,7 @@ export function FloatingCheckoutButton() {
               {totalItems > 9 ? '9+' : totalItems}
             </span>
           </div>
-          <span className="font-medium">Checkout</span>
+          {/*<span className="font-medium">Checkout</span>*/}
         </div>
       </CheckoutButton>
     </div>

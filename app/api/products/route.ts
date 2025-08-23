@@ -5,6 +5,105 @@ import {
 import { Product } from '@/types'
 import { NextRequest, NextResponse } from 'next/server'
 
+// -------- Search helpers to improve findability --------
+
+const SYNONYMS: Record<string, string[]> = {
+  rice: ['jollof', 'basmati', 'long grain'],
+  oil: ['cooking oil', 'vegetable oil', 'sunflower', 'canola'],
+  pepper: ['shito', 'pepper sauce', 'hot sauce', 'chili'],
+  gari: ['garri', 'cassava flakes'],
+  yam: ['tuber'],
+  beans: ['cowpea', 'black-eyed peas'],
+  gift: ['present', 'hamper', 'bundle'],
+  spice: ['seasoning', 'herbs', 'condiments'],
+  snack: ['biscuits', 'cookies', 'chips'],
+  drink: ['beverage', 'juice', 'soda'],
+  flour: ['maize', 'corn flour', 'cassava flour'],
+  fish: ['tilapia', 'smoked fish'],
+  chicken: ['poultry'],
+  beef: ['meat'],
+  soap: ['detergent', 'cleanser'],
+  ghana: ['gh', 'made in ghana'],
+}
+
+function normalizeText(s: string) {
+  return s
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+}
+
+function tokenize(q: string): string[] {
+  const base = normalizeText(q)
+  return base
+    .split(/[^a-z0-9]+/g)
+    .map(t => t.trim())
+    .filter(Boolean)
+}
+
+function expandSynonyms(tokens: string[]): string[] {
+  const expanded = new Set<string>()
+  for (const t of tokens) {
+    expanded.add(t)
+    const syns = SYNONYMS[t]
+    if (syns) {
+      for (const s of syns) {
+        tokenize(s).forEach(tt => expanded.add(tt))
+      }
+    }
+  }
+  return Array.from(expanded)
+}
+
+function buildSearchCorpus(p: any) {
+  const parts = [
+    p.name || '',
+    p.description || '',
+    (p.tags || []).join(' '),
+    p.vendor || '',
+    p.category || '',
+    p.origin || '',
+    p.subcategory || ''
+  ]
+  return normalizeText(parts.join(' '))
+}
+
+function computeScore(product: any, tokens: string[]): number {
+  const text = buildSearchCorpus(product)
+  let score = 0
+
+  for (const token of tokens) {
+    if (!token) continue
+
+    // Strong matches
+    if (normalizeText(product.name || '').includes(token)) score += 5
+    if ((product.tags || []).some((t: string) => normalizeText(t).includes(token))) score += 4
+
+    // Medium matches
+    if (normalizeText(product.description || '').includes(token)) score += 2
+
+    // Weak matches
+    if (normalizeText(product.vendor || '').includes(token)) score += 1
+    if (normalizeText(product.category || '').includes(token)) score += 1
+    if (normalizeText(product.origin || '').includes(token)) score += 1
+
+    // Starts-with boost on name
+    if (normalizeText(product.name || '').split(/\s+/).some((w: string) => w.startsWith(token))) {
+      score += 2
+    }
+
+    // Full-text fallback
+    if (text.includes(token)) score += 1
+  }
+
+  // Small boosts for merchandising
+  if (product.isFeatured) score += 0.5
+  if ((product.availability === 'IN_STOCK') && product.stock > 0) score += 0.5
+  if (typeof product.rating === 'number') score += Math.min(product.rating, 5) * 0.1
+
+  return score
+}
+
 // GET /api/products - Fetch products with filtering and pagination using mock data
 export async function GET(request: NextRequest) {
   try {
@@ -33,17 +132,7 @@ export async function GET(request: NextRequest) {
       filteredProducts = filteredProducts.filter(product => product.category === category)
     }
 
-    // Apply search filter
-    if (search) {
-      filteredProducts = filteredProducts.filter(product =>
-        product.name.toLowerCase().includes(search.toLowerCase()) ||
-        product.description.toLowerCase().includes(search.toLowerCase()) ||
-        product.tags.some(tag => tag.toLowerCase().includes(search.toLowerCase())) ||
-        (product.vendor && product.vendor.toLowerCase().includes(search.toLowerCase()))
-      )
-    }
-
-    // Apply other filters
+    // Apply other filters (except search)
     if (featured) {
       filteredProducts = filteredProducts.filter(product => product.isFeatured)
     }
@@ -75,37 +164,90 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Apply sorting
-    filteredProducts.sort((a, b) => {
-      let comparison = 0
+    // Advanced search scoring (tokenization + synonyms + fallback)
+    if (search && search.trim()) {
+      const rawTokens = tokenize(search)
+      const tokens = expandSynonyms(rawTokens)
 
-      switch (sortBy) {
-        case 'price':
-          comparison = a.price - b.price
-          break
-        case 'name':
-          comparison = a.name.localeCompare(b.name)
-          break
-        case 'rating':
-          comparison = (a.rating || 0) - (b.rating || 0)
-          break
-        case 'stock':
-          comparison = a.stock - b.stock
-          break
-        case 'reviewCount':
-          comparison = (a.reviewCount || 0) - (b.reviewCount || 0)
-          break
-        case 'featured':
-          comparison = (a.isFeatured ? 1 : 0) - (b.isFeatured ? 1 : 0)
-          break
-        case 'createdAt':
-        default:
-          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-          break
+      // Score products
+      const scored = filteredProducts.map(p => ({
+        product: p,
+        score: computeScore(p, tokens),
+      }))
+
+      // Keep positives
+      let positives = scored.filter(s => s.score > 0)
+
+      // Fallback 1: If nothing positive, try looser partial matching on name/tags
+      if (positives.length === 0) {
+        const q = normalizeText(search)
+        const loose = filteredProducts.map(p => {
+          const inName = normalizeText(p.name || '').includes(q)
+          const inTags = (p.tags || []).some((t: string) => normalizeText(t).includes(q))
+          const inDesc = normalizeText(p.description || '').includes(q)
+          const score = (inName ? 4 : 0) + (inTags ? 3 : 0) + (inDesc ? 1 : 0)
+          return { product: p, score }
+        }).filter(s => s.score > 0)
+        positives = loose
       }
 
-      return sortOrder === 'desc' ? -comparison : comparison
-    })
+      // Fallback 2: If still nothing, show featured/popular/newest
+      if (positives.length === 0) {
+        let fallback = filteredProducts.filter(p => p.isFeatured)
+        if (fallback.length === 0) {
+          fallback = [...filteredProducts]
+        }
+        positives = fallback.map(p => ({
+          product: p,
+          score: (p.isFeatured ? 2 : 0) + (p.rating || 0) + (p.reviewCount || 0) * 0.1
+        }))
+      }
+
+      // Sort by score desc, then by rating/reviews/createdAt
+      positives.sort((a, b) => {
+        const byScore = b.score - a.score
+        if (byScore !== 0) return byScore
+        const byRating = (b.product.rating || 0) - (a.product.rating || 0)
+        if (byRating !== 0) return byRating
+        const byReviews = (b.product.reviewCount || 0) - (a.product.reviewCount || 0)
+        if (byReviews !== 0) return byReviews
+        return new Date(b.product.createdAt).getTime() - new Date(a.product.createdAt).getTime()
+      })
+
+      filteredProducts = positives.map(s => s.product)
+    } else {
+      // Apply sorting when no search query
+      filteredProducts.sort((a, b) => {
+        let comparison = 0
+
+        switch (sortBy) {
+          case 'price':
+            comparison = a.price - b.price
+            break
+          case 'name':
+            comparison = a.name.localeCompare(b.name)
+            break
+          case 'rating':
+            comparison = (a.rating || 0) - (b.rating || 0)
+            break
+          case 'stock':
+            comparison = a.stock - b.stock
+            break
+          case 'reviewCount':
+            comparison = (a.reviewCount || 0) - (b.reviewCount || 0)
+            break
+          case 'featured':
+            comparison = (a.isFeatured ? 1 : 0) - (b.isFeatured ? 1 : 0)
+            break
+          case 'createdAt':
+          default:
+            comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            break
+        }
+
+        return sortOrder === 'desc' ? -comparison : comparison
+      })
+    }
 
     // Apply pagination
     const paginatedResult = paginateMockData(filteredProducts, page, limit)
