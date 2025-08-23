@@ -36,6 +36,7 @@ interface CartSummary {
 }
 
 interface RecipientInfo {
+  addressId?: string
   recipientName: string
   phone: string
   alternatePhone: string
@@ -94,6 +95,7 @@ export default function CheckoutPage() {
 
   // Recipient Information (Primary focus for diaspora orders)
   const [recipientInfo, setRecipientInfo] = useState<RecipientInfo>({
+    addressId: undefined,
     recipientName: '',
     phone: '',
     alternatePhone: '',
@@ -198,7 +200,12 @@ export default function CheckoutPage() {
 
   const handleRecipientChange = (field: keyof RecipientInfo, value: string) => {
     setRecipientInfo(prev => {
-      const next = { ...prev, [field]: value }
+      const next = {
+        ...prev,
+        [field]: value,
+        // Clear addressId when user manually edits recipient info
+        addressId: undefined
+      }
 
       // Persist recipient info to cart store/localStorage for prefill
       try {
@@ -357,6 +364,7 @@ export default function CheckoutPage() {
     if (address) {
       setRecipientInfo(prev => ({
         ...prev,
+        addressId: addressId, // Add the address ID to avoid duplicates
         recipientName: address.recipientName,
         phone: address.phone,
         addressLine: address.addressLine,
@@ -558,14 +566,18 @@ export default function CheckoutPage() {
                 <div className="space-y-6">
                   {savedAddresses.length > 0 && (
                     <div className="flex items-center justify-between">
-                      <h3 className="font-semibold">New Recipient Details</h3>
+                      <h3 className="text-lg font-medium">Enter New Recipient Details</h3>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setShowRecipientForm(false)}
-                        className="text-muted-foreground"
+                        onClick={() => {
+                          setShowRecipientForm(false)
+                          // Clear addressId when switching to saved addresses
+                          setRecipientInfo(prev => ({ ...prev, addressId: undefined }))
+                        }}
+                        className="text-primary"
                       >
-                        Cancel
+                        Use Saved Address
                       </Button>
                     </div>
                   )}

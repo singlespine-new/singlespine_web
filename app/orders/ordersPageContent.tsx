@@ -110,17 +110,32 @@ function OrdersPageContent() {
       setLoading(true)
       const response = await fetch('/api/orders')
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch orders')
-      }
+      if (response.ok) {
+        const data = await response.json()
+        setOrders(data.orders || [])
 
-      const data = await response.json()
-      setOrders(data.orders || [])
+        // Show helpful message if no orders found
+        if (data.message && (!data.orders || data.orders.length === 0)) {
+          console.log('Orders API message:', data.message)
+        }
+      } else {
+        // Handle non-200 responses gracefully
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }))
+        console.error('Orders API error:', response.status, errorData.message)
+
+        // Still show empty state instead of error for better UX
+        setOrders([])
+
+        // Only show toast error for actual server errors, not empty results
+        if (response.status >= 500) {
+          toast.error('Server error loading orders. Please try again later.')
+        }
+      }
     } catch (error) {
       console.error('Error fetching orders:', error)
-      toast.error('Failed to load orders')
-      // Show empty state if API fails
+      // Network or other errors - show empty state
       setOrders([])
+      toast.error('Unable to connect to server. Please check your connection.')
     } finally {
       setLoading(false)
     }
@@ -205,16 +220,32 @@ function OrdersPageContent() {
     try {
       setLoading(true)
       const response = await fetch('/api/orders')
-      if (!response.ok) {
-        throw new Error('Failed to refresh orders')
-      }
 
-      const data = await response.json()
-      setOrders(data.orders || [])
-      toast.success('Orders refreshed!')
+      if (response.ok) {
+        const data = await response.json()
+        setOrders(data.orders || [])
+        toast.success('Orders refreshed!')
+
+        // Show message if no orders found
+        if (data.message && (!data.orders || data.orders.length === 0)) {
+          toast.info(data.message)
+        }
+      } else {
+        // Handle errors gracefully
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }))
+        console.error('Refresh orders error:', response.status, errorData.message)
+
+        if (response.status >= 500) {
+          toast.error('Server error. Please try again.')
+        } else {
+          // For other errors, just set empty orders
+          setOrders([])
+          toast.info('No orders found')
+        }
+      }
     } catch (error) {
       console.error('Error refreshing orders:', error)
-      toast.error('Failed to refresh orders')
+      toast.error('Unable to refresh. Please check your connection.')
     } finally {
       setLoading(false)
     }

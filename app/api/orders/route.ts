@@ -20,6 +20,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { items, recipient, orderPlacer, delivery, summary, paymentMethod } = body
 
+    console.log('Order creation request:', {
+      hasItems: !!items,
+      itemsCount: items?.length,
+      hasRecipient: !!recipient,
+      hasPaymentMethod: !!paymentMethod,
+      paymentMethodType: paymentMethod?.type,
+      paymentMethodId: paymentMethod?.id
+    })
+
     // Validate required fields
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
@@ -89,19 +98,38 @@ export async function POST(request: NextRequest) {
     const randomCode = Math.random().toString(36).substr(2, 9).toUpperCase()
     const orderNumber = `ORD-${timestamp}-${randomCode}`
 
-    // Create or find recipient address
-    const recipientAddressRecord = await prisma.address.create({
-      data: {
-        userId: user.id,
-        name: recipientName,
-        phone: recipientPhone,
-        streetAddress: recipientAddress,
-        city: recipient.city,
-        region: recipient.region,
-        landmark: recipient.landmark || null,
-        isDefault: false
+    // Use existing address if provided, otherwise create new one
+    let recipientAddressRecord
+    if (recipient.addressId) {
+      // Verify the address belongs to the user
+      recipientAddressRecord = await prisma.address.findFirst({
+        where: {
+          id: recipient.addressId,
+          userId: user.id
+        }
+      })
+
+      if (!recipientAddressRecord) {
+        return NextResponse.json(
+          { message: 'Selected address not found' },
+          { status: 400 }
+        )
       }
-    })
+    } else {
+      // Create new address only if no addressId provided
+      recipientAddressRecord = await prisma.address.create({
+        data: {
+          userId: user.id,
+          name: recipientName,
+          phone: recipientPhone,
+          streetAddress: recipientAddress,
+          city: recipient.city,
+          region: recipient.region,
+          landmark: recipient.landmark || null,
+          isDefault: false
+        }
+      })
+    }
 
     // For now, we'll create the order without order items to avoid ObjectId issues
     // This is a temporary solution until we implement proper product management
@@ -149,7 +177,10 @@ export async function POST(request: NextRequest) {
     // Simulate payment processing based on payment method
     let paymentResult = { success: false, transactionId: null }
 
-    switch (paymentMethod.type) {
+    // Normalize payment method type to handle both uppercase and lowercase
+    const normalizedPaymentType = paymentMethod.type?.toLowerCase()
+
+    switch (normalizedPaymentType) {
       case 'card':
         // In real app, integrate with Stripe, PayStack, etc.
         paymentResult = {
@@ -174,9 +205,18 @@ export async function POST(request: NextRequest) {
         }
         break
 
+      case 'cash_on_delivery':
+        // Cash on delivery doesn't need payment processing
+        paymentResult = {
+          success: true,
+          transactionId: `cod_${Date.now()}`
+        }
+        break
+
       default:
+        console.log('Invalid payment method type:', paymentMethod.type, 'normalized:', normalizedPaymentType)
         return NextResponse.json(
-          { message: 'Invalid payment method' },
+          { message: `Invalid payment method: ${paymentMethod.type}. Supported types: CARD, MOBILE_MONEY, BANK_TRANSFER, CASH_ON_DELIVERY` },
           { status: 400 }
         )
     }
@@ -265,35 +305,78 @@ export async function GET() {
       )
     }
 
-    // Find user
+    // Find user with better error handling
     let user = null
-    if (sid) {
-      user = await prisma.user.findUnique({ where: { id: sid } })
-    }
-    if (!user && email) {
-      user = await prisma.user.findUnique({ where: { email } })
-    }
-
-    if (!user) {
+    try {
+      if (sid) {
+        user = await prisma.user.findUnique({ where: { id: sid } })
+      }
+      if (!user && email) {
+        user = await prisma.user.findUnique({ where: { email } })
+      }
+    } catch (error) {
+      console.error('Error finding user:', error)
       return NextResponse.json(
-        { message: 'User not found' },
-        { status: 404 }
+        { message: 'Error retrieving user information' },
+        { status: 500 }
       )
     }
 
-    // Fetch orders from database
-    const orders = await prisma.order.findMany({
-      where: {
-        userId: user.id
-      },
-      include: {
-        address: true,
-        payments: true
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    })
+    if (!user) {
+      console.log('User not found - sid:', sid, 'email:', email)
+      // Return empty orders instead of 404 for better UX
+      return NextResponse.json(
+        {
+          orders: [],
+          message: 'No orders found for this user'
+        },
+        {
+          status: 200,
+          headers: {
+            'Cache-Control': 'no-store',
+          },
+        }
+      )
+    }
+
+    // Fetch orders from database with error handling
+    let orders = []
+    try {
+      orders = await prisma.order.findMany({
+        where: {
+          userId: user.id
+        },
+        include: {
+          address: true,
+          payments: true
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      })
+    } catch (error) {
+      console.error('Error fetching orders:', error)
+      return NextResponse.json(
+        { message: 'Error retrieving orders' },
+        { status: 500 }
+      )
+    }
+
+    // Handle empty orders gracefully
+    if (!orders || orders.length === 0) {
+      return NextResponse.json(
+        {
+          orders: [],
+          message: 'No orders found'
+        },
+        {
+          status: 200,
+          headers: {
+            'Cache-Control': 'no-store',
+          },
+        }
+      )
+    }
 
     // Transform orders to match frontend interface
     const transformedOrders = orders.map(order => {
@@ -357,9 +440,18 @@ export async function GET() {
     )
   } catch (err) {
     console.error('GET /api/orders error:', err)
+    // Return empty orders with error message for better UX
     return NextResponse.json(
-      { message: 'Internal server error' },
-      { status: 500 }
+      {
+        orders: [],
+        message: 'Unable to load orders at this time. Please try again later.'
+      },
+      {
+        status: 200,
+        headers: {
+          'Cache-Control': 'no-store',
+        },
+      }
     )
   }
 }
