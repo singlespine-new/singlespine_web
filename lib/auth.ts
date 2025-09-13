@@ -120,10 +120,15 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user, account }) {
       if (user) {
+        // Standard fields
         token.role = user.role
         token.id = user.id
-        token.phoneNumber = user.phoneNumber
-        token.picture = user.image
+        token.phoneNumber = (user as any).phoneNumber
+        // Provider (Google) image
+        token.picture = (user as any).image || null
+        // Custom uploaded avatar (new field from schema)
+        token.customAvatar = (user as any).customAvatarUrl || null
+
         console.log('JWT callback: Updated token for user', user.id)
       }
       if (account) {
@@ -133,23 +138,33 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (token) {
-        session.user.id = token.id || token.sub!
-        session.user.role = token.role as string
-        session.user.phoneNumber = token.phoneNumber as string
-        session.user.image = token.picture as string
+        // Base identity
+        session.user.id = (token as any).id || token.sub!
+        session.user.role = (token as any).role as string
+        session.user.phoneNumber = (token as any).phoneNumber as string | undefined
+
+        // Provider & custom images
+        const providerImage = (token as any).picture as string | undefined
+        const customAvatar = (token as any).customAvatar as string | undefined
+
+        // Effective avatar preference: custom first, fallback to provider
+        session.user.image = (customAvatar || providerImage || '') as string
+
+          // Expose both for client decisions
+          ; (session.user as any).providerImage = providerImage
+          ; (session.user as any).customAvatar = customAvatar
+
         console.log('Session callback: Created session for user', session.user.id)
       }
       return session
     },
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account }) {
       console.log('SignIn callback: Provider', account?.provider, 'User ID', user?.id)
       return true
     },
     async redirect({ url, baseUrl }) {
       console.log('Redirect callback: From', url, 'Base', baseUrl)
-      // Allows relative callback URLs
       if (url.startsWith("/")) return `${baseUrl}${url}`
-      // Allows callback URLs on the same origin
       else if (new URL(url).origin === baseUrl) return url
       return baseUrl
     }

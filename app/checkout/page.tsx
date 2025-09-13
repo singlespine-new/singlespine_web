@@ -677,7 +677,7 @@ export default function CheckoutPage() {
       clearCart()
       toast.success('Order placed successfully 🎉')
       router.push(`/orders/${orderId}`)
-    } catch (e: unknown) {
+    } catch (e) {
       toast.error(e?.message || 'Order failed')
     } finally {
       setSubmitting(false)

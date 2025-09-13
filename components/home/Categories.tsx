@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import ProductCard from '../products/ProductCard'
 import { Product, Category } from '@/types'
 import { PRODUCT_CATEGORIES } from '@/constants/categories'
 import { getMockProductsByCategory, getMockFeaturedProducts } from '@/data/mockData'
