@@ -5,7 +5,30 @@ import { signIn, getSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
-import { Phone, ArrowLeft, CheckCircle, Loader2, User, Mail } from 'lucide-react'
+import { UIIcon } from '@/components/ui/icon'
+/* Icon adapter layer with proper typing (replaces previous any-based adapters) */
+interface IconAdapterProps extends React.SVGProps<SVGSVGElement> {
+  size?: number
+}
+
+const Phone: React.FC<IconAdapterProps> = ({ size = 20, ...rest }) => (
+  <UIIcon name="phone" size={size} {...rest} />
+)
+const ArrowLeft: React.FC<IconAdapterProps> = ({ size = 20, ...rest }) => (
+  <UIIcon name="arrow-left" size={size} {...rest} />
+)
+const CheckCircle: React.FC<IconAdapterProps> = ({ size = 20, ...rest }) => (
+  <UIIcon name="success" size={size} {...rest} />
+)
+const Loader2: React.FC<IconAdapterProps> = ({ size = 20, ...rest }) => (
+  <UIIcon name="loading" spin size={size} {...rest} />
+)
+const User: React.FC<IconAdapterProps> = ({ size = 20, ...rest }) => (
+  <UIIcon name="user" size={size} {...rest} />
+)
+const Mail: React.FC<IconAdapterProps> = ({ size = 20, ...rest }) => (
+  <UIIcon name="mail" size={size} {...rest} />
+)
 // import { cn } from '@/lib/utils'
 import toast from '@/components/ui/toast'
 import OtpInput from 'react-otp-input'

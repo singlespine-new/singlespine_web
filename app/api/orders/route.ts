@@ -283,30 +283,42 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET - Fetch user's orders
-export async function GET() {
+// GET - Fetch user's orders (with filtering, sorting, pagination, search, meta)
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const url = new URL(request.url)
+    // Pagination
+    const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10))
+    const pageSize = Math.min(
+      50,
+      Math.max(1, parseInt(url.searchParams.get('pageSize') || '10', 10))
+    )
 
+    // Filters
+    const statusFilter = url.searchParams.get('status') || 'all'
+    const search = (url.searchParams.get('search') || '').trim()
+    const dateFrom = url.searchParams.get('from')
+    const dateTo = url.searchParams.get('to')
+
+    // Sorting: createdAt_desc | createdAt_asc | total_desc | total_asc
+    const sortParam = url.searchParams.get('sort') || 'createdAt_desc'
+    const [sortFieldRaw, sortDirRaw] = sortParam.split('_')
+    const sortField = ['createdAt', 'total'].includes(sortFieldRaw) ? sortFieldRaw : 'createdAt'
+    const sortDir = sortDirRaw === 'asc' ? 'asc' : 'desc'
+
+    const session = await getServerSession(authOptions)
     if (!session?.user) {
-      return NextResponse.json(
-        { message: 'Unauthorized' },
-        { status: 401 }
-      )
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
     const sid = (session.user as any)?.id as string | undefined
     const email = (session.user as any)?.email as string | undefined
-
     if (!sid && !email) {
-      return NextResponse.json(
-        { message: 'Unable to resolve current user' },
-        { status: 400 }
-      )
+      return NextResponse.json({ message: 'Unable to resolve current user' }, { status: 400 })
     }
 
-    // Find user with better error handling
-    let user = null
+    // Resolve user
+    let user = null as any
     try {
       if (sid) {
         user = await prisma.user.findUnique({ where: { id: sid } })
@@ -314,144 +326,178 @@ export async function GET() {
       if (!user && email) {
         user = await prisma.user.findUnique({ where: { email } })
       }
-    } catch (error) {
-      console.error('Error finding user:', error)
-      return NextResponse.json(
-        { message: 'Error retrieving user information' },
-        { status: 500 }
-      )
+    } catch (e) {
+      console.error('User lookup error:', e)
+      return NextResponse.json({ message: 'Error retrieving user information' }, { status: 500 })
     }
 
     if (!user) {
-      console.log('User not found - sid:', sid, 'email:', email)
-      // Return empty orders instead of 404 for better UX
       return NextResponse.json(
         {
           orders: [],
+          meta: {
+            page,
+            pageSize,
+            total: 0,
+            totalPages: 0,
+            filters: { status: statusFilter, search, dateFrom, dateTo },
+            sort: { field: sortField, direction: sortDir }
+          },
           message: 'No orders found for this user'
         },
-        {
-          status: 200,
-          headers: {
-            'Cache-Control': 'no-store',
-          },
-        }
+        { status: 200, headers: { 'Cache-Control': 'no-store' } }
       )
     }
 
-    // Fetch orders from database with error handling
-    let orders = []
-    try {
-      orders = await prisma.order.findMany({
-        where: {
-          userId: user.id
-        },
-        include: {
-          address: true,
-          payments: true
-        },
-        orderBy: {
-          createdAt: 'desc'
-        }
-      })
-    } catch (error) {
-      console.error('Error fetching orders:', error)
-      return NextResponse.json(
-        { message: 'Error retrieving orders' },
-        { status: 500 }
-      )
+    // Build Prisma where clause
+    const statusMapReverse: Record<string, string[]> = {
+      pending: ['PENDING'],
+      confirmed: ['CONFIRMED'],
+      preparing: ['PROCESSING'],
+      shipped: ['SHIPPED', 'OUT_FOR_DELIVERY'],
+      delivered: ['DELIVERED'],
+      cancelled: ['CANCELLED', 'RETURNED']
     }
 
-    // Handle empty orders gracefully
-    if (!orders || orders.length === 0) {
-      return NextResponse.json(
-        {
-          orders: [],
-          message: 'No orders found'
-        },
-        {
-          status: 200,
-          headers: {
-            'Cache-Control': 'no-store',
-          },
-        }
-      )
-    }
+    const where: any = { userId: user.id }
 
-    // Transform orders to match frontend interface
-    const transformedOrders = orders.map(order => {
-      // Map database status to frontend format
-      const statusMap: Record<string, string> = {
-        'PENDING': 'pending',
-        'CONFIRMED': 'confirmed',
-        'PROCESSING': 'preparing',
-        'SHIPPED': 'shipped',
-        'OUT_FOR_DELIVERY': 'shipped',
-        'DELIVERED': 'delivered',
-        'CANCELLED': 'cancelled',
-        'RETURNED': 'cancelled'
+    if (statusFilter !== 'all') {
+      const mapped = statusMapReverse[statusFilter.toLowerCase()]
+      if (mapped) {
+        where.status = { in: mapped }
       }
+    }
 
-      return {
-        id: order.id,
-        orderNumber: order.orderNumber,
-        status: statusMap[order.status] || order.status.toLowerCase(),
-        items: [
-          {
-            id: '1',
-            name: 'Premium Ghanaian Product',
-            quantity: 2,
-            price: 45.00,
-            image: '/placeholder-product.jpg',
-            variant: null
-          }
-        ],
-        total: order.total,
-        subtotal: order.subtotal,
-        shippingCost: order.shippingCost,
-        taxAmount: order.tax,
-        shippingInfo: {
-          name: order.address.name,
-          phone: order.address.phone,
-          address: order.address.streetAddress,
-          city: order.address.city,
-          region: order.address.region,
-          postalCode: order.address.ghanaPostGPS || ''
-        },
-        paymentMethod: order.paymentMethod || 'Unknown',
-        trackingNumber: order.trackingNumber,
-        estimatedDelivery: order.deliveryDate ?
-          new Date(order.deliveryDate).toLocaleDateString() :
-          '5-7 business days',
-        createdAt: order.createdAt.toISOString(),
-        deliveryDate: order.deliveryDate?.toISOString(),
-        notes: order.notes
+    if (search) {
+      // Basic search across orderNumber & trackingNumber
+      where.OR = [
+        { orderNumber: { contains: search, mode: 'insensitive' } },
+        { trackingNumber: { contains: search, mode: 'insensitive' } }
+      ]
+    }
+
+    if (dateFrom || dateTo) {
+      where.createdAt = {}
+      if (dateFrom) {
+        const fromDate = new Date(dateFrom)
+        if (!isNaN(fromDate.getTime())) where.createdAt.gte = fromDate
       }
+      if (dateTo) {
+        const toDate = new Date(dateTo)
+        if (!isNaN(toDate.getTime())) {
+          // Include the full end day
+          toDate.setHours(23, 59, 59, 999)
+          where.createdAt.lte = toDate
+        }
+      }
+      if (Object.keys(where.createdAt).length === 0) {
+        delete where.createdAt
+      }
+    }
+
+    // Count total (for pagination meta)
+    const total = await prisma.order.count({ where })
+
+    // Fetch paginated orders
+    const orders = await prisma.order.findMany({
+      where,
+      include: {
+        address: true,
+        payments: true
+      },
+      orderBy: {
+        [sortField]: sortDir
+      },
+      skip: (page - 1) * pageSize,
+      take: pageSize
     })
 
+    // Status mapping to frontend
+    const statusMap: Record<string, string> = {
+      PENDING: 'pending',
+      CONFIRMED: 'confirmed',
+      PROCESSING: 'preparing',
+      SHIPPED: 'shipped',
+      OUT_FOR_DELIVERY: 'shipped',
+      DELIVERED: 'delivered',
+      CANCELLED: 'cancelled',
+      RETURNED: 'cancelled'
+    }
+
+    const transformedOrders = orders.map(order => ({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      status: statusMap[order.status] || order.status.toLowerCase(),
+      items: [
+        // Placeholder until real line items are stored
+        {
+          id: '1',
+          name: 'Premium Ghanaian Product',
+          quantity: 2,
+          price: 45.0,
+          image: '/placeholder-product.jpg',
+          variant: null
+        }
+      ],
+      total: order.total,
+      subtotal: order.subtotal,
+      shippingCost: order.shippingCost,
+      taxAmount: order.tax,
+      shippingInfo: {
+        name: order.address.name,
+        phone: order.address.phone,
+        address: order.address.streetAddress,
+        city: order.address.city,
+        region: order.address.region,
+        postalCode: order.address.ghanaPostGPS || ''
+      },
+      paymentMethod: order.paymentMethod || 'Unknown',
+      trackingNumber: order.trackingNumber,
+      estimatedDelivery: order.deliveryDate
+        ? new Date(order.deliveryDate).toLocaleDateString()
+        : '5-7 business days',
+      createdAt: order.createdAt.toISOString(),
+      deliveryDate: order.deliveryDate?.toISOString(),
+      notes: order.notes
+    }))
+
+    const totalPages = Math.ceil(total / pageSize)
+
     return NextResponse.json(
-      { orders: transformedOrders },
       {
-        status: 200,
-        headers: {
-          'Cache-Control': 'no-store',
-        },
-      }
+        orders: transformedOrders,
+        meta: {
+          page,
+          pageSize,
+          total,
+          totalPages,
+          sort: { field: sortField, direction: sortDir },
+          filters: {
+            status: statusFilter,
+            search: search || null,
+            dateFrom: dateFrom || null,
+            dateTo: dateTo || null
+          }
+        }
+      },
+      { status: 200, headers: { 'Cache-Control': 'no-store' } }
     )
   } catch (err) {
     console.error('GET /api/orders error:', err)
-    // Return empty orders with error message for better UX
     return NextResponse.json(
       {
         orders: [],
+        meta: {
+          page: 1,
+          pageSize: 10,
+          total: 0,
+          totalPages: 0,
+          sort: { field: 'createdAt', direction: 'desc' },
+          filters: { status: 'all', search: null, dateFrom: null, dateTo: null }
+        },
         message: 'Unable to load orders at this time. Please try again later.'
       },
-      {
-        status: 200,
-        headers: {
-          'Cache-Control': 'no-store',
-        },
-      }
+      { status: 200, headers: { 'Cache-Control': 'no-store' } }
     )
   }
 }

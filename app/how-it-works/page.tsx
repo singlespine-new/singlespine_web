@@ -2,20 +2,19 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import {
-  MapPin,
-  ArrowRight,
-  // Package,
-  // CheckCircle,
-  Shield,
-  Truck,
-  Heart,
-  ShoppingCart,
-  CreditCard,
-  Gift,
-  Users,
-  Smile,
-} from 'lucide-react'
+import { UIIcon } from '@/components/ui/icon'
+
+/* Icon adapters replacing lucide-react for consistency */
+const MapPin = (p: any) => <UIIcon name="location" size={28} {...p} />
+const ArrowRight = (p: any) => <UIIcon name="arrow-right" size={20} {...p} />
+const Shield = (p: any) => <UIIcon name="shield" size={28} {...p} />
+const Truck = (p: any) => <UIIcon name="truck" size={28} {...p} />
+const Heart = (p: any) => <UIIcon name="heart" size={28} {...p} />
+const ShoppingCart = (p: any) => <UIIcon name="cart" size={28} {...p} />
+const CreditCard = (p: any) => <UIIcon name="credit-card" size={28} {...p} />
+const Gift = (p: any) => <UIIcon name="gift" size={24} {...p} />
+const Users = (p: any) => <UIIcon name="users" size={24} {...p} />
+const Smile = (p: any) => <UIIcon name="smile" size={24} {...p} />
 import { Button } from '@/components/ui/Button'
 import { SearchBar } from '@/components/ui/SearchBar'
 import { cn } from '@/lib/utils'

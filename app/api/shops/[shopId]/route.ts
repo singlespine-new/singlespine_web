@@ -1,4 +1,5 @@
-import { getMockShopById } from '@/data/mockData'
+import { getMockShopById, getMockShopBySlug, MOCK_SHOPS } from '@/data/mockData'
+import { normalizeShopSlug, resolveShopIdentifier } from '@/lib/shopSlug'
 import { ApiResponse, Shop } from '@/types'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -17,8 +18,27 @@ export async function GET(
       )
     }
 
-    // Get mock shop data
-    const shop = getMockShopById(shopId)
+    // Build resolver sets once (cheap for mock data)
+    const idSet = new Set(MOCK_SHOPS.map(s => s.id))
+    const slugSet = new Set(MOCK_SHOPS.map(s => normalizeShopSlug(s.slug || '')))
+
+    // Resolve candidate (could be id or slug variant)
+    const resolution = resolveShopIdentifier(shopId, {
+      knownIds: idSet,
+      knownSlugs: slugSet
+    })
+
+    if (!resolution.found) {
+      return NextResponse.json(
+        { success: false, error: 'Shop not found' },
+        { status: 404 }
+      )
+    }
+
+    // Fetch by resolved canonical (try id first then slug)
+    const shop =
+      getMockShopById(resolution.canonical) ||
+      getMockShopBySlug(resolution.canonical)
 
     if (!shop) {
       return NextResponse.json(
@@ -89,7 +109,7 @@ export async function PUT(
 ) {
   try {
     // Check authentication and permissions
-    const { getCurrentUser, isAdmin } = await import('@/lib/auth')
+    const { getCurrentUser } = await import('@/lib/auth')
     const user = await getCurrentUser()
 
     if (!user) {

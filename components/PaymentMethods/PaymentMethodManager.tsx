@@ -1,8 +1,46 @@
 'use client'
 
+import * as React from 'react'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/Button'
-import { CreditCard, Plus, Trash2, Shield, Smartphone, Building2, Building, Banknote, CheckCircle, AlertCircle, Edit3 } from 'lucide-react'
+import { UIIcon } from '@/components/ui/icon'
+
+interface IconAdapterProps extends React.SVGProps<SVGSVGElement> {
+  size?: number
+}
+
+const CreditCard: React.FC<IconAdapterProps> = ({ size = 20, ...rest }) => (
+  <UIIcon name="credit-card" size={size} {...rest} />
+)
+const Plus: React.FC<IconAdapterProps> = ({ size = 20, ...rest }) => (
+  <UIIcon name="plus" size={size} {...rest} />
+)
+const Trash2: React.FC<IconAdapterProps> = ({ size = 20, ...rest }) => (
+  <UIIcon name="trash" size={size} {...rest} />
+)
+const Shield: React.FC<IconAdapterProps> = ({ size = 20, ...rest }) => (
+  <UIIcon name="shield" size={size} {...rest} />
+)
+const Smartphone: React.FC<IconAdapterProps> = ({ size = 20, ...rest }) => (
+  <UIIcon name="smartphone" size={size} {...rest} />
+)
+const Building2: React.FC<IconAdapterProps> = ({ size = 20, ...rest }) => (
+  <UIIcon name="building-2" size={size} {...rest} />
+)
+const Building: React.FC<IconAdapterProps> = ({ size = 20, ...rest }) => (
+  <UIIcon name="building" size={size} {...rest} />
+)
+const Banknote: React.FC<IconAdapterProps> = ({ size = 20, ...rest }) => (
+  <UIIcon name="banknote" size={size} {...rest} />
+)
+const CheckCircle: React.FC<IconAdapterProps> = ({ size = 20, ...rest }) => (
+  <UIIcon name="success" size={size} {...rest} />
+)
+const AlertCircle: React.FC<IconAdapterProps> = ({ size = 20, ...rest }) => (
+  <UIIcon name="error" size={size} {...rest} />
+)
+// Removed unused Edit3 icon (previous placeholder for future edit actions)
+
 import toast from '@/components/ui/toast'
 
 interface PaymentMethod {
@@ -22,14 +60,14 @@ interface PaymentMethod {
 }
 
 interface PaymentMethodManagerProps {
-  onPaymentMethodSelect?: (paymentMethod: PaymentMethod) => void
+  onPaymentMethodSelectAction?: (paymentMethod: PaymentMethod) => void
   selectedPaymentMethodId?: string
   showAddButton?: boolean
   className?: string
 }
 
 export default function PaymentMethodManager({
-  onPaymentMethodSelect,
+  onPaymentMethodSelectAction,
   selectedPaymentMethodId,
   showAddButton = true,
   className = ''
@@ -66,7 +104,7 @@ export default function PaymentMethodManager({
 
   const handlePaymentMethodSelect = (paymentMethod: PaymentMethod) => {
     setSelectedMethod(paymentMethod.id)
-    onPaymentMethodSelect?.(paymentMethod)
+    onPaymentMethodSelectAction?.(paymentMethod)
   }
 
   const handleDeletePaymentMethod = async (paymentMethodId: string) => {
@@ -379,7 +417,7 @@ function AddPaymentMethodForm({ onClose, onSuccess }: AddPaymentMethodFormProps)
                 <button
                   key={type}
                   type="button"
-                  onClick={() => setSelectedType(type as any)}
+                  onClick={() => setSelectedType(type as 'card' | 'mobile_money' | 'bank_transfer')}
                   className={`p-3 border-2 rounded-xl text-center transition-all ${selectedType === type
                     ? 'border-primary bg-primary/5'
                     : 'border-border/30 hover:border-border/60'

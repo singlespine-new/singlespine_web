@@ -11,30 +11,33 @@ import { useAuth, useRequireAuth } from '@/lib/auth-utils'
 import { Button } from '@/components/ui/Button'
 import toast from '@/components/ui/toast'
 import PaymentMethodManager from '@/components/PaymentMethods/PaymentMethodManager'
-import {
-  User as UserIcon,
-  Mail,
-  Phone,
-  Save,
-  Loader2,
-  MapPin,
-  Plus,
-  Pencil,
-  Trash2,
-  CheckCircle2,
-  Star,
-  X,
-  CreditCard,
-  ArrowLeft,
-  Settings,
-  Shield,
-  Search,
-  Tag,
-  Globe2,
-  Check,
-  AlertCircle,
-  Lock
-} from 'lucide-react'
+import { UIIcon, makeIcon } from '@/components/ui/icon'
+
+/* Icon adapter layer using makeIcon utility for consistency */
+const UserIcon = makeIcon('user')
+const Mail = makeIcon('mail')
+const Phone = makeIcon('phone')
+const Save = makeIcon('save', { size: 20 }) // proper save icon
+const Loader2: React.FC<{ size?: number; className?: string }> = ({ size = 20, className }) => (
+  <UIIcon name="loading" size={size} spin className={className} />
+)
+const MapPin = makeIcon('location')
+const Plus = makeIcon('plus')
+const Pencil = makeIcon('edit')
+const Trash2 = makeIcon('trash')
+const CheckCircle2 = makeIcon('success')
+const Star = makeIcon('star')
+const X = makeIcon('close')
+const CreditCard = makeIcon('credit-card')
+const ArrowLeft = makeIcon('arrow-left')
+const Settings = makeIcon('settings')
+const Shield = makeIcon('shield')
+const Search = makeIcon('search')
+const Tag = makeIcon('tag') // now using real tag icon
+const Globe2 = makeIcon('globe')
+const Check = makeIcon('success', { size: 18 })
+const AlertCircle = makeIcon('error')
+const Lock = makeIcon('lock')
 import Image from 'next/image'
 
 /**
@@ -123,7 +126,7 @@ const DesktopNav: React.FC<{
                   type="button"
                   onClick={() => onChange(item.id)}
                   aria-current={active ? 'page' : undefined}
-                  className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-primary/30
+                  className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer
                   ${active
                       ? 'bg-primary text-white shadow-sm'
                       : 'bg-white/70 text-foreground hover:bg-white'}
@@ -617,7 +620,7 @@ export default function ProfilePage() {
             variant="outline"
             size="sm"
             onClick={() => setActiveTab('addresses')}
-            className="hidden sm:inline-flex"
+            className="hidden sm:inline-flex cursor-pointer"
           >
             Manage Addresses
           </Button>
@@ -633,7 +636,7 @@ export default function ProfilePage() {
                       src={avatarUrl}
                       alt="Avatar"
                       fill
-                      className="object-cover"
+                      className="object-cover rounded-full"
                     />
                   ) : (
                     <UserIcon className="w-12 h-12 text-primary/70" />
@@ -643,7 +646,7 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={handleAvatarPick}
-                    className="px-3 py-1.5 rounded-full bg-primary text-white text-[11px] font-medium shadow focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-60"
+                    className="px-3 py-1.5 rounded-full bg-primary text-white text-[11px] font-medium shadow focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-60 cursor-pointer"
                     disabled={avatarLoading}
                   >
                     {avatarLoading ? 'Uploading...' : isCustomAvatar ? 'Change' : (avatarUrl ? 'Change' : 'Upload')}
@@ -731,7 +734,7 @@ export default function ProfilePage() {
             <Button
               type="submit"
               disabled={savingProfile || avatarLoading}
-              className="h-12 px-8 rounded-xl font-semibold"
+              className="h-12 px-8 rounded-xl font-semibold cursor-pointer"
             >
               {savingProfile ? (
                 <span className="flex items-center gap-2">
@@ -900,7 +903,7 @@ export default function ProfilePage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => router.back()}
-                className="h-10 w-10 p-0 rounded-xl"
+                className="h-10 w-10 p-0 rounded-xl cursor-pointer"
                 aria-label="Go back"
               >
                 <ArrowLeft className="w-5 h-5" />

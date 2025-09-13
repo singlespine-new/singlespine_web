@@ -1,7 +1,14 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { Search, Filter, Grid, List, Package } from 'lucide-react'
+import React, { useState, useEffect, useCallback } from 'react'
+import { makeIcon } from '@/components/ui/icon'
+/* Icon adapters now generated via makeIcon utility for consistency & brevity */
+const Search = makeIcon('search')
+const Filter = makeIcon('filter')
+const Grid = makeIcon('grid')
+const List = makeIcon('list')
+const Package = makeIcon('package')
+
 import { Button } from '@/components/ui/Button'
 import { SearchBar } from '@/components/ui/SearchBar'
 import ProductCard from '@/components/products/ProductCard'
@@ -516,7 +523,7 @@ export default function ProductsPage() {
       <ProductDetailsModal
         product={selectedProduct}
         isOpen={showProductModal}
-        onClose={() => setShowProductModal(false)}
+        onCloseAction={() => setShowProductModal(false)}
         onAddToCart={handleAddToCart}
       />
 

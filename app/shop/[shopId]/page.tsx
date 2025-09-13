@@ -3,20 +3,20 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
-import {
-  Search,
-  Filter,
-  Grid,
-  List,
-  Package,
-  Clock,
-  Star,
-  MapPin,
-  Phone,
-  Globe,
-  X,
-  RefreshCcw
-} from 'lucide-react'
+import { makeIcon } from '@/components/ui/icon'
+import { normalizeShopSlug } from '@/lib/shopSlug'
+const Search = makeIcon('search')
+const Filter = makeIcon('filter')
+const Grid = makeIcon('grid')
+const List = makeIcon('list')
+const Package = makeIcon('package')
+const Clock = makeIcon('clock')
+const Star = makeIcon('star')
+const MapPin = makeIcon('location')
+const Phone = makeIcon('phone')
+const Globe = makeIcon('globe')
+const X = makeIcon('close')
+const RefreshCcw = makeIcon('refresh')
 import { Button } from '@/components/ui/Button'
 import { SearchBar } from '@/components/ui/SearchBar'
 import ProductCard from '@/components/products/ProductCard'
@@ -495,7 +495,9 @@ function ShopHeader({ shop }: { shop: Shop }) {
 
 export default function ShopPage() {
   const params = useParams()
-  const shopId = params.shopId as string
+  const rawShopParam = params.shopId as string
+  const normalizedShopParam = normalizeShopSlug(rawShopParam)
+  const effectiveShopId = normalizedShopParam || rawShopParam
   const { isAuthenticated } = useAuth()
   const { addItem } = useCartStore()
   const router = useRouter()
@@ -572,11 +574,11 @@ export default function ShopPage() {
       setLoading(true)
       setError(null)
       try {
-        const shopRes = await fetch(`/api/shops/${shopId}`, { signal: controller.signal })
+        const shopRes = await fetch(`/api/shops/${effectiveShopId}`, { signal: controller.signal })
         const shopJson = await shopRes.json()
         if (!shopJson.success) throw new Error(shopJson.error || 'Failed to fetch shop')
 
-        const prodRes = await fetch(`/api/shops/${shopId}/products?limit=100`, { signal: controller.signal })
+        const prodRes = await fetch(`/api/shops/${effectiveShopId}/products?limit=100`, { signal: controller.signal })
         const prodJson = await prodRes.json()
         if (!prodJson.success) throw new Error(prodJson.error || 'Failed to fetch products')
 
@@ -595,12 +597,12 @@ export default function ShopPage() {
       }
     }
 
-    if (shopId) fetchData()
+    if (effectiveShopId) fetchData()
     return () => {
       aborted = true
       controller.abort()
     }
-  }, [shopId])
+  }, [effectiveShopId])
 
   /* ------------------------------- Filtering -------------------------------- */
   useEffect(() => {
@@ -938,7 +940,7 @@ export default function ShopPage() {
                       className={viewMode === 'list' ? 'flex flex-row' : ''}
                       showQuickAdd
                       viewMode={viewMode}
-                      onClick={() => openProduct(product)}
+                      onClickAction={() => openProduct(product)}
                     />
                   </div>
                 ))}
@@ -960,7 +962,7 @@ export default function ShopPage() {
             : null
         }
         isOpen={showProductModal}
-        onClose={() => setShowProductModal(false)}
+        onCloseAction={() => setShowProductModal(false)}
         onAddToCart={handleAddToCart}
       />
     </div>

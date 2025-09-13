@@ -13,7 +13,15 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"; // Corrected import path
-import { Menu, ShoppingBag, Heart, User, LogOut, Package, Settings } from 'lucide-react';
+import { UIIcon } from '@/components/ui/icon';
+interface IconAdapterProps extends React.SVGProps<SVGSVGElement> { size?: number }
+const Menu: React.FC<IconAdapterProps> = ({ size = 20, ...rest }) => <UIIcon name="more" size={size} {...rest} />
+const ShoppingBag: React.FC<IconAdapterProps> = ({ size = 20, ...rest }) => <UIIcon name="shopping-bag" size={size} {...rest} />
+const Heart: React.FC<IconAdapterProps> = ({ size = 20, ...rest }) => <UIIcon name="heart" size={size} {...rest} />
+const User: React.FC<IconAdapterProps> = ({ size = 18, ...rest }) => <UIIcon name="user" size={size} {...rest} />
+const LogOut: React.FC<IconAdapterProps> = ({ size = 18, ...rest }) => <UIIcon name="logout" size={size} {...rest} />
+const Package: React.FC<IconAdapterProps> = ({ size = 18, ...rest }) => <UIIcon name="package" size={size} {...rest} />
+const Settings: React.FC<IconAdapterProps> = ({ size = 18, ...rest }) => <UIIcon name="settings" size={size} {...rest} />
 import { cn } from '@/lib/utils'; // Import cn utility
 import { useCartStore } from '@/lib/store/cart';
 import { useWishlistStore } from '@/lib/store/wishlist';
@@ -94,7 +102,7 @@ const Header = () => {
           <Button
             variant="ghost"
             size="icon"
-            className="relative"
+            className="relative cursor-pointer"
             onClick={openWishlist}
           >
             <Heart className="h-5 w-5" />
@@ -109,7 +117,7 @@ const Header = () => {
           <Button
             variant="ghost"
             size="icon"
-            className="relative"
+            className="relative cursor-pointer"
             onClick={openCart}
           >
             <ShoppingBag className="h-5 w-5" />
@@ -133,7 +141,7 @@ const Header = () => {
                       alt={user?.name || 'User Avatar'}
                       width={32}
                       height={32}
-                      className="w-full h-full rounded-full object-cover"
+                      className="w-full h-full rounded-full object-cover cursor-pointer"
 
                     />
                   ) : (

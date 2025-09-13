@@ -1,23 +1,55 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useCallback, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { X, Minus, Plus, ShoppingBag, Trash2, MapPin, Package, Heart } from 'lucide-react'
+import { UIIcon } from '@/components/ui/icon'
 import { Button } from '@/components/ui/Button'
 import { useCartStore, getEmptyCartMessage } from '@/lib/store/cart'
 import { formatCurrency } from '@/lib/stripe'
 import { cn } from '@/lib/utils'
 import toast from '@/components/ui/toast'
 import { CompactCheckoutButton } from '@/components/ui/CheckoutButton'
-import { useAuth } from '@/lib/auth-utils'
 
 interface CartSidebarProps {
   isOpen: boolean
-  onClose: () => void
+  onCloseAction: () => void
 }
 
-export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
+/**
+ * Animation timing (keep in sync with tailwind durations used below).
+ */
+const PANEL_ANIMATION_MS = 320
+
+export default function CartSidebar({ isOpen, onCloseAction }: CartSidebarProps) {
+  // Single action prop (legacy onClose removed)
+  const handleClose = useCallback(() => {
+    onCloseAction()
+  }, [onCloseAction])
+
+  /**
+   * Mount management for smooth exit animation.
+   * rendered: whether component is kept in the tree
+   * exiting: internal flag to drive exit state styling
+   */
+  const [rendered, setRendered] = useState(isOpen)
+  const [exiting, setExiting] = useState(false)
+
+  useEffect(() => {
+    if (isOpen) {
+      setRendered(true)
+      setExiting(false)
+    } else if (rendered) {
+      // Trigger exit animation then unmount
+      setExiting(true)
+      const t = setTimeout(() => {
+        setRendered(false)
+        setExiting(false)
+      }, PANEL_ANIMATION_MS)
+      return () => clearTimeout(t)
+    }
+  }, [isOpen, rendered])
+
   const {
     items,
     updateQuantity,
@@ -29,7 +61,6 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
     getFinalTotal
   } = useCartStore()
 
-  const { isAuthenticated } = useAuth()
   const totalItems = getTotalItems()
   const subtotal = getTotalPrice()
   const shippingCost = getShippingCost()
@@ -51,8 +82,8 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
     if (!item) return
 
     if (newQuantity > item.maxQuantity) {
-      toast.error(`Sorry! Only ${item.maxQuantity} items available 😔`, {
-        icon: '📦'
+      toast.error(`Only ${item.maxQuantity} in stock.`, {
+        icon: <UIIcon name="package" size={18} />
       })
       return
     }
@@ -64,8 +95,8 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
     const item = items.find(item => item.id === itemId)
     if (item) {
       removeItem(itemId)
-      toast.success(`${item.name} removed from your basket! 🗑️`, {
-        icon: '👋'
+      toast.success(`${item.name} removed from your basket.`, {
+        icon: <UIIcon name="trash" size={18} />
       })
     }
   }
@@ -74,58 +105,78 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
     if (items.length === 0) return
 
     clearCart()
-    toast.success('Your basket is now empty and ready for new treasures! 🧹', {
-      icon: '✨'
+    toast.success('Your basket is now empty.', {
+      icon: <UIIcon name="cart" size={18} />
     })
   }
 
   // Close on escape key
   useEffect(() => {
+    if (!rendered) return
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
-        onClose()
+        handleClose()
       }
     }
-
     document.addEventListener('keydown', handleEscape)
     return () => document.removeEventListener('keydown', handleEscape)
-  }, [isOpen, onClose])
+  }, [isOpen, handleClose, rendered])
 
   // Prevent body scroll when sidebar is open
   useEffect(() => {
-    if (isOpen) {
+    if (rendered && isOpen) {
       document.body.style.overflow = 'hidden'
-    } else {
+    } else if (!isOpen) {
       document.body.style.overflow = 'unset'
     }
-
     return () => {
-      document.body.style.overflow = 'unset'
+      if (!isOpen) {
+        document.body.style.overflow = 'unset'
+      }
     }
-  }, [isOpen])
+  }, [isOpen, rendered])
 
-  if (!isOpen) return null
+  if (!rendered) return null
+
+  const panelState = isOpen && !exiting ? 'open' : 'closed'
 
   return (
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity duration-300"
-        onClick={onClose}
+        aria-hidden="true"
+        className={cn(
+          'fixed inset-0 z-50 bg-black/60 backdrop-blur-sm transition-opacity duration-300',
+          panelState === 'open' ? 'opacity-100' : 'opacity-0'
+        )}
+        onClick={handleClose}
       />
 
-      {/* Sidebar */}
-      <div className={cn(
-        "fixed right-0 top-0 h-full w-full max-w-md bg-background border-l border-border shadow-2xl z-50",
-        "transform transition-transform duration-300 ease-in-out",
-        isOpen ? "translate-x-0" : "translate-x-full"
-      )}>
-        <div className="flex flex-col h-full">
+      {/* Sidebar (Dialog Panel) */}
+      <div
+        className={cn(
+          'fixed right-0 top-0 z-[51] h-full w-full max-w-md',
+          'outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+          'flex flex-col'
+        )}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cart-sidebar-title"
+        data-state={panelState}
+      >
+        <div
+          className={cn(
+            "relative flex flex-col h-full bg-background border-l border-border shadow-2xl",
+            "transition-transform duration-300 ease-[cubic-bezier(.4,.0,.2,1)] will-change-transform",
+            panelState === 'open' ? "translate-x-0" : "translate-x-full",
+            "data-[state=closed]:pointer-events-none"
+          )}
+        >
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-border/40 bg-gradient-to-r from-primary/5 to-secondary/10">
             <div className="flex items-center gap-3">
               <div className="relative">
-                <ShoppingBag className="w-6 h-6 text-primary" />
+                <UIIcon name="cart-bag" size={24} className="text-primary" />
                 {totalItems > 0 && (
                   <span className="absolute -top-2 -right-2 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
                     {totalItems > 99 ? '99+' : totalItems}
@@ -133,14 +184,20 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
                 )}
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-foreground">Your Basket</h2>
+                <h2 id="cart-sidebar-title" className="text-lg font-semibold text-foreground">Your Basket</h2>
                 <p className="text-sm text-muted-foreground">
                   {totalItems === 0 ? 'Empty basket' : `${totalItems} item${totalItems === 1 ? '' : 's'}`}
                 </p>
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="w-5 h-5" />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleClose}
+              className='cursor-pointer'
+              aria-label="Close cart panel"
+            >
+              <UIIcon name="close" size={20} />
             </Button>
           </div>
 
@@ -150,8 +207,8 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
               /* Empty State */
               <div className="flex flex-col items-center justify-center h-full p-8 text-center">
                 <div className="relative mb-6">
-                  <ShoppingBag className="w-16 h-16 text-muted-foreground/50" />
-                  <Heart className="w-6 h-6 text-primary absolute -top-1 -right-1" />
+                  <UIIcon name="cart-bag" size={64} className="text-muted-foreground/50" />
+                  <UIIcon name="heart" size={24} className="text-primary absolute -top-1 -right-1" />
                 </div>
                 <h3 className="text-lg font-semibold text-foreground mb-2">
                   Your basket is waiting!
@@ -160,7 +217,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
                   {emptyMessage}
                 </p>
                 <Button asChild className="w-full max-w-xs">
-                  <Link href="/products" onClick={onClose}>
+                  <Link href="/products" onClick={handleClose}>
                     Start Shopping
                   </Link>
                 </Button>
@@ -211,13 +268,13 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
                         <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
                           {item.metadata?.origin && (
                             <div className="flex items-center gap-1">
-                              <MapPin className="w-3 h-3" />
+                              <UIIcon name="location" size={12} />
                               <span>{item.metadata.origin}</span>
                             </div>
                           )}
                           {item.metadata?.weight && (
                             <div className="flex items-center gap-1">
-                              <Package className="w-3 h-3" />
+                              <UIIcon name="package" size={12} />
                               <span>{item.metadata.weight}kg</span>
                             </div>
                           )}
@@ -233,10 +290,11 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="w-8 h-8 text-muted-foreground hover:text-destructive flex-shrink-0"
+                        className="w-8 h-8 text-muted-foreground hover:text-destructive flex-shrink-0 cursor-pointer"
                         onClick={() => handleRemoveItem(item.id)}
+                        aria-label={`Remove ${item.name}`}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <UIIcon name="trash" size={16} />
                       </Button>
                     </div>
 
@@ -246,25 +304,27 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
                         <Button
                           variant="outline"
                           size="icon"
-                          className="w-8 h-8"
+                          className="w-8 h-8 cursor-pointer"
                           onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
                           disabled={item.quantity <= 1}
+                          aria-label="Decrease quantity"
                         >
-                          <Minus className="w-3 h-3" />
+                          <UIIcon name="minus" size={12} />
                         </Button>
 
-                        <span className="w-12 text-center font-medium text-foreground">
+                        <span className="w-12 text-center font-medium text-foreground" aria-live="polite">
                           {item.quantity}
                         </span>
 
                         <Button
                           variant="outline"
                           size="icon"
-                          className="w-8 h-8"
+                          className="w-8 h-8 cursor-pointer"
                           onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
                           disabled={item.quantity >= item.maxQuantity}
+                          aria-label="Increase quantity"
                         >
-                          <Plus className="w-3 h-3" />
+                          <UIIcon name="plus" size={12} />
                         </Button>
                       </div>
 
@@ -288,9 +348,9 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
                     variant="ghost"
                     size="sm"
                     onClick={handleClearCart}
-                    className="w-full text-muted-foreground hover:text-destructive"
+                    className="w-full text-muted-foreground hover:text-destructive cursor-pointer"
                   >
-                    <Trash2 className="w-4 h-4 mr-2" />
+                    <UIIcon name="trash" size={16} className="mr-2" />
                     Clear All Items
                   </Button>
                 )}
@@ -312,7 +372,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
                   <span>Shipping</span>
                   <span>
                     {shippingCost === 0 ? (
-                      <span className="text-green-600 font-medium">FREE! 🎉</span>
+                      <span className="text-green-600 font-medium inline-flex items-center gap-1"><UIIcon name="gift" size={14} /> FREE!</span>
                     ) : (
                       formatCurrency(shippingCost)
                     )}
@@ -321,13 +381,13 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
 
                 {shippingCost === 0 && subtotal >= 500 && (
                   <div className="text-xs text-green-600 dark:text-green-400 text-center py-1">
-                    🎊 You saved {formatCurrency(15)} on shipping!
+                    <span className="inline-flex items-center gap-1"><UIIcon name="discount" size={14} /> You saved {formatCurrency(15)} on shipping!</span>
                   </div>
                 )}
 
                 {subtotal < 500 && (
                   <div className="text-xs text-muted-foreground text-center py-1">
-                    Add {formatCurrency(500 - subtotal)} more for FREE shipping! 🚚
+                    <span className="inline-flex items-center gap-1">Add {formatCurrency(500 - subtotal)} more for FREE shipping! <UIIcon name="truck" size={14} /></span>
                   </div>
                 )}
 
@@ -339,15 +399,15 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
 
               {/* Action Buttons */}
               <div className="space-y-3">
-                <div onClick={onClose}>
+                <div onClick={handleClose}>
                   <CompactCheckoutButton />
                 </div>
 
                 <Button
                   variant="outline"
                   asChild
-                  className="w-full"
-                  onClick={onClose}
+                  className="w-full cursor-pointer"
+                  onClick={handleClose}
                 >
                   <Link href="/products">
                     Continue Shopping
@@ -358,9 +418,9 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
               {/* Trust Indicators */}
               <div className="text-center text-xs text-muted-foreground">
                 <div className="flex items-center justify-center gap-4 pt-2">
-                  <span>🔒 Secure Checkout</span>
-                  <span>🚚 Fast Delivery</span>
-                  <span>💝 Gift Ready</span>
+                  <span className="inline-flex items-center gap-1"><UIIcon name="lock" size={14} /> Secure Checkout</span>
+                  <span className="inline-flex items-center gap-1"><UIIcon name="truck" size={14} /> Fast Delivery</span>
+                  <span className="inline-flex items-center gap-1"><UIIcon name="gift" size={14} /> Gift Ready</span>
                 </div>
               </div>
             </div>

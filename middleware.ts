@@ -1,10 +1,41 @@
+import { MOCK_SHOPS } from '@/data/mockData'
+import { normalizeShopSlug } from '@/lib/shopSlug'
 import { withAuth } from "next-auth/middleware"
 import { NextResponse } from "next/server"
+
+// Cached shop lookup sets (initialized once at module load)
+const SHOP_ID_SET = new Set(MOCK_SHOPS.map(s => s.id))
+const SHOP_SLUG_SET = new Set(MOCK_SHOPS.map(s => normalizeShopSlug(s.slug || '')))
 
 export default withAuth(
   function middleware(req) {
     // Get the pathname of the request (e.g. /, /products, /checkout)
     const pathname = req.nextUrl.pathname
+
+    // Canonical shop slug redirect (only if target exists):
+    // 1. Extract /shop/<segment>
+    // 2. Normalize -> canonical
+    // 3. Check if canonical exists as shop id OR slug in mock dataset
+    // 4. Redirect only if:
+    //    - Provided differs from canonical normalization
+    //    - Canonical exists (prevents redirect loops to 404)
+    if (pathname.startsWith('/shop/')) {
+      const seg = pathname.slice(6).split('/')[0] || ''
+      if (seg) {
+        const normalized = normalizeShopSlug(seg)
+        if (normalized && normalized !== seg) {
+          // Use cached lookup sets (avoids per-request allocation)
+          const canonicalExists =
+            SHOP_ID_SET.has(normalized) ||
+            SHOP_SLUG_SET.has(normalized)
+          if (canonicalExists) {
+            const url = req.nextUrl.clone()
+            url.pathname = `/shop/${normalized}`
+            return NextResponse.redirect(url, 301)
+          }
+        }
+      }
+    }
 
     // Check if user is authenticated
     const token = req.nextauth.token

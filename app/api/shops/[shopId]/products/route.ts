@@ -1,4 +1,5 @@
-import { getMockProductsByShop, paginateMockData } from '@/data/mockData'
+import { getMockProductsByShop, MOCK_SHOPS, paginateMockData } from '@/data/mockData'
+import { normalizeShopSlug } from '@/lib/shopSlug'
 import { ApiResponse, PaginationInfo, Product } from '@/types'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -28,10 +29,26 @@ export async function GET(
     }
 
     // Calculate offset
-    const offset = (page - 1) * limit
+    // const offset = (page - 1) * limit  // Removed (unused)
 
-    // Get mock products data for the shop
-    const allShopProducts = getMockProductsByShop(shopId)
+    // Resolve incoming shopId which may actually be a slug
+    const normalized = normalizeShopSlug(shopId)
+    const shopRecord = MOCK_SHOPS.find(
+      s =>
+        s.id === shopId ||
+        s.id === normalized ||
+        normalizeShopSlug(s.slug || '') === normalized
+    )
+
+    if (!shopRecord) {
+      return NextResponse.json(
+        { success: false, error: 'Shop not found' },
+        { status: 404 }
+      )
+    }
+
+    // Get mock products data for the resolved shop id
+    const allShopProducts = getMockProductsByShop(shopRecord.id)
     let filteredProducts = [...allShopProducts]
 
     // Apply filters
@@ -164,7 +181,7 @@ export async function POST(
 ) {
   try {
     // Check authentication and permissions
-    const { getCurrentUser, isAdmin } = await import('@/lib/auth')
+    const { getCurrentUser } = await import('@/lib/auth')
     const user = await getCurrentUser()
 
     if (!user) {

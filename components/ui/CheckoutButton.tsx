@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/lib/auth-utils'
 import { useCartStore } from '@/lib/store/cart'
-import { ShoppingCart, Lock, ArrowRight, Loader2 } from 'lucide-react'
+import { UIIcon } from '@/components/ui/icon'
 import toast from '@/components/ui/toast'
 
 interface CheckoutButtonProps {
@@ -40,7 +40,7 @@ export default function CheckoutButton({
       // Check if cart is empty
       if (isEmpty) {
         toast.error('Your cart is empty! Add some items first.', {
-          icon: '🛒',
+          icon: <UIIcon name="cart" size={18} />,
           duration: 3000
         })
         return
@@ -63,13 +63,13 @@ export default function CheckoutButton({
     <>
       {showIcon && !isProcessing && (
         isAuthenticated ? (
-          <ShoppingCart className="w-4 h-4 mr-2" />
+          <UIIcon name="cart" size={16} className="mr-2" />
         ) : (
-          <Lock className="w-4 h-4 mr-2" />
+          <UIIcon name="lock" size={16} className="mr-2" />
         )
       )}
       {isProcessing && (
-        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        <UIIcon name="loading" size={16} spin className="mr-2" />
       )}
       {isProcessing ? (
         'Processing...'
@@ -81,7 +81,7 @@ export default function CheckoutButton({
         'Sign In to Checkout'
       )}
       {!isProcessing && !isEmpty && showIcon && (
-        <ArrowRight className="w-4 h-4 ml-2" />
+        <UIIcon name="arrow-right" size={16} className="ml-2" />
       )}
     </>
   )
@@ -110,7 +110,7 @@ export function CompactCheckoutButton() {
     <CheckoutButton
       size="lg"
       fullWidth
-      className="font-semibold"
+      className="font-semibold cursor-pointer"
       showIcon={true}
     />
   )
@@ -132,7 +132,7 @@ export function FloatingCheckoutButton() {
       >
         <div className="flex items-center gap-2">
           <div className="relative">
-            <ShoppingCart className="w-5 h-5" />
+            <UIIcon name="cart" size={20} />
             <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
               {totalItems > 9 ? '9+' : totalItems}
             </span>

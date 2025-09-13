@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Facebook, Instagram, Twitter } from 'lucide-react'; // Import Lucide icons
+import { UIIcon } from '@/components/ui/icon';
 
 // Define types for links
 interface FooterLink {
@@ -14,15 +14,29 @@ interface SocialLink extends FooterLink {
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
+  // Icon wrappers using unified UIIcon system
+  interface IconAdapterProps extends React.SVGProps<SVGSVGElement> {
+    size?: number
+  }
+  const FacebookIcon: React.FC<IconAdapterProps> = ({ size = 20, ...rest }) => (
+    <UIIcon name="facebook" size={size} {...rest} />
+  )
+  const InstagramIcon: React.FC<IconAdapterProps> = ({ size = 20, ...rest }) => (
+    <UIIcon name="instagram" size={size} {...rest} />
+  )
+  const TwitterIcon: React.FC<IconAdapterProps> = ({ size = 20, ...rest }) => (
+    <UIIcon name="twitter" size={size} {...rest} />
+  )
+
   const footerLinks: FooterLink[] = [
     { label: 'Terms of Service', href: '/terms' },
     { label: 'Privacy', href: '/privacy' },
   ];
 
   const socialLinks: SocialLink[] = [
-    { label: 'Facebook', href: '#', icon: Facebook }, // Use imported icons
-    { label: 'Instagram', href: '#', icon: Instagram },
-    { label: 'Twitter', href: '#', icon: Twitter }, // Use X/Twitter icon
+    { label: 'Facebook', href: '#', icon: FacebookIcon },
+    { label: 'Instagram', href: '#', icon: InstagramIcon },
+    { label: 'Twitter', href: '#', icon: TwitterIcon },
   ];
 
   return (

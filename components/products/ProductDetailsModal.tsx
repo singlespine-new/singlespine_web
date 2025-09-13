@@ -7,17 +7,17 @@ import {
   useCallback,
   KeyboardEvent as ReactKeyboardEvent
 } from 'react'
-import {
-  X,
-  Plus,
-  Minus,
-  ShoppingCart,
-  Star,
-  Truck,
-  Package,
-  Heart,
-  Share2
-} from 'lucide-react'
+import { makeIcon } from '@/components/ui/icon'
+/* Refactored to use makeIcon utility for consistency and reduced boilerplate */
+const X = makeIcon('close')
+const Plus = makeIcon('plus')
+const Minus = makeIcon('minus')
+const ShoppingCart = makeIcon('cart')
+const Star = makeIcon('star')
+const Truck = makeIcon('truck')
+const Package = makeIcon('package')
+const Heart = makeIcon('heart')
+const Share2 = makeIcon('share')
 import Image from 'next/image'
 import Link from 'next/link'
 import toast from '@/components/ui/toast'
@@ -28,11 +28,12 @@ import { getMockShopById } from '@/data/mockData'
 import { useCartStore } from '@/lib/store/cart'
 import { useWishlistStore } from '@/lib/store/wishlist'
 import { useAuth } from '@/lib/auth-utils'
+import { buildShopHref } from '@/lib/shopSlug'
 
 interface ProductDetailsModalProps {
   product: Product | null
   isOpen: boolean
-  onClose: () => void
+  onCloseAction: () => void
   onAddToCart?: (productId: string, quantity: number, variantId?: string) => void // still accepted but handled internally
 }
 
@@ -42,6 +43,8 @@ const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max)
 
 const formatCurrency = (value: number) => `₵${value.toFixed(2)}`
+
+
 
 /* ---------------------------- Sub Presentational --------------------------- */
 
@@ -211,7 +214,7 @@ function AvailabilityBadge({
 export default function ProductDetailsModal({
   product,
   isOpen,
-  onClose
+  onCloseAction
 }: ProductDetailsModalProps) {
   const { addItem } = useCartStore()
   const {
@@ -309,7 +312,7 @@ export default function ProductDetailsModal({
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault()
-        onClose()
+        onCloseAction()
       }
       if (e.key === 'Tab' && dialogRef.current) {
         const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
@@ -345,13 +348,13 @@ export default function ProductDetailsModal({
     }
     document.addEventListener('keydown', handleKey)
     return () => document.removeEventListener('keydown', handleKey)
-  }, [isOpen, onClose, product?.images])
+  }, [isOpen, onCloseAction, product?.images])
 
   /* --------------------------------- Handlers --------------------------------- */
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
-      onClose()
+      onCloseAction()
     }
   }
 
@@ -543,7 +546,7 @@ export default function ProductDetailsModal({
             <Button
               variant="ghost"
               size="sm"
-              onClick={onClose}
+              onClick={onCloseAction}
               className="h-9 w-9 p-0 rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors"
               aria-label="Close modal"
             >
@@ -641,9 +644,7 @@ export default function ProductDetailsModal({
                   </h1>
                   {product.vendor && (
                     <Link
-                      href={`/shop/${encodeURIComponent(
-                        product.vendor.toLowerCase().replace(/\s+/g, '-')
-                      )}`}
+                      href={buildShopHref({ vendor: product.vendor, shopId: product.shopId })}
                       className="text-xs font-medium text-primary hover:underline"
                     >
                       by {product.vendor}
@@ -779,7 +780,7 @@ export default function ProductDetailsModal({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={onClose}
+                onClick={onCloseAction}
                 className="text-xs text-muted-foreground hover:text-foreground"
               >
                 Close

@@ -1,4 +1,6 @@
+import { UIIcon } from '@/components/ui/icon'
 import toast from '@/components/ui/toast'
+import React from 'react'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
@@ -105,8 +107,8 @@ export const useWishlistStore = create<WishlistStore>()(
 
         syncWithBackend()
 
-        toast.success(`${newItem.name} added to your wishlist!`, {
-          icon: '❤️'
+        toast.success(`${newItem.name} added to your wishlist.`, {
+          icon: React.createElement(UIIcon, { name: 'heart', size: 16, className: 'text-primary' })
         })
       },
 
@@ -148,8 +150,8 @@ export const useWishlistStore = create<WishlistStore>()(
 
         syncWithBackend()
 
-        toast.success(`${item.name} removed from wishlist`, {
-          icon: '💔'
+        toast.info(`${item.name} removed from wishlist.`, {
+          icon: React.createElement(UIIcon, { name: 'trash', size: 16, className: 'text-muted-foreground' })
         })
       },
 
@@ -175,7 +177,9 @@ export const useWishlistStore = create<WishlistStore>()(
 
         syncWithBackend()
 
-        toast.success('Wishlist cleared!')
+        toast.info('Wishlist cleared.', {
+          icon: React.createElement(UIIcon, { name: 'heart', size: 16 })
+        })
       },
 
       moveToCart: (productId, variantId) => {
@@ -271,12 +275,12 @@ export const useIsWishlisted = (productId: string, variantId?: string) => {
 // African-inspired motivational messages for empty wishlist
 export const getEmptyWishlistMessage = () => {
   const messages = [
-    "Your wishlist is empty! Start adding items you love ❤️",
-    "Create a collection of gifts for your loved ones back home 🏠",
-    "Save items for later and spread joy when the time is right ✨",
-    "Build your dream gift collection from across Africa 🌍",
-    "Your heart desires are waiting to be collected here 💝",
-    "Start curating gifts that will bring smiles to faces in Ghana 😊"
+    "Your wishlist is empty — start adding items you love.",
+    "Curate thoughtful gifts for loved ones back home.",
+    "Save products now and check out when you're ready.",
+    "Build a collection of authentic items from Ghana.",
+    "Organize the items that matter most in one place.",
+    "Add a few items and we'll keep them here for quick access."
   ]
 
   return messages[Math.floor(Math.random() * messages.length)]

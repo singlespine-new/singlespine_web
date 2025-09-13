@@ -4,7 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 import { SearchBar } from '@/components/ui/SearchBar'
-import { Home, Search, Package, ArrowRight } from 'lucide-react'
+import { UIIcon } from '@/components/ui/icon'
 import { useRouter } from 'next/navigation'
 
 export default function NotFound() {
@@ -38,7 +38,7 @@ export default function NotFound() {
               onSearch={handleSearch}
               containerClassName="mx-auto max-w-xl bg-white/90 dark:bg-background/80 backdrop-blur border border-transparent focus-within:border-primary/40 shadow-sm"
               className="text-foreground placeholder:text-foreground/60"
-              icon={<Search size={18} className="text-primary" />}
+              icon={<UIIcon name="search" size={18} className="text-primary" />}
             />
             <p className="mt-2 text-xs text-muted-foreground">
               Tip: Try searching for “rice”, “cooking oil”, or an area like “East Legon”.
@@ -48,13 +48,13 @@ export default function NotFound() {
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button asChild size="lg" className="font-semibold w-full sm:w-auto">
               <Link href="/products" aria-label="Browse all products">
-                <Package className="mr-2 h-5 w-5" />
+                <UIIcon name="package" size={20} className="mr-2 h-5 w-5" />
                 Browse Products
               </Link>
             </Button>
             <Button asChild variant="outline" size="lg" className="font-semibold w-full sm:w-auto">
               <Link href="/" aria-label="Go back to home">
-                <Home className="mr-2 h-5 w-5" />
+                <UIIcon name="arrow-left" size={20} className="mr-2 h-5 w-5" />
                 Go Home
               </Link>
             </Button>
@@ -67,7 +67,7 @@ export default function NotFound() {
               aria-label="Learn how Singlespine works"
             >
               Learn how it works
-              <ArrowRight className="h-4 w-4" />
+              <UIIcon name="arrow-right" size={16} className="h-4 w-4" />
             </Link>
           </div>
 

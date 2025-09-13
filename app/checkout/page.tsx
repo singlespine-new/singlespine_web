@@ -4,35 +4,39 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth, useRequireAuth } from '@/lib/auth-utils'
 import { Button } from '@/components/ui/Button'
-import {
-  ShoppingCart,
-  Lock,
-  CreditCard,
-  CheckCircle,
-  AlertCircle,
-  Shield,
-  Truck,
-  Package,
-  Zap,
-  ArrowLeft,
-  Plus,
-  CheckCircle2,
-  Heart,
-  MapPin,
-  User,
-  Phone,
-  ChevronRight,
-  ChevronLeft,
-  Percent,
-  Loader2
-} from 'lucide-react'
+import { UIIcon, makeIcon } from '@/components/ui/icon'
 import toast from '@/components/ui/toast'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useCartStore } from '@/lib/store/cart'
-import SmartPhonePrompt from '@/components/PhoneNumberPrompt/SmartPhonePrompt'
+import PhoneCaptureDialog from '@/components/PhoneNumberPrompt/PhoneCaptureDialog'
 import { useCheckoutPhonePrompt } from '@/components/PhoneNumberPrompt/usePhonePrompt'
 import PaymentMethodManager from '@/components/PaymentMethods/PaymentMethodManager'
+
+/* Icon adapters using centralized makeIcon utility (removes local factory) */
+const ShoppingCart = makeIcon('cart')
+const Lock = makeIcon('lock')
+const CreditCard = makeIcon('credit-card')
+const CheckCircle = makeIcon('success')
+const AlertCircle = makeIcon('error')
+const Shield = makeIcon('shield')
+const Truck = makeIcon('truck')
+const Package = makeIcon('package')
+const Zap = makeIcon('zap')
+const ArrowLeft = makeIcon('arrow-left')
+const Plus = makeIcon('plus')
+const CheckCircle2 = makeIcon('success')
+const Heart = makeIcon('heart')
+const MapPin = makeIcon('location')
+const User = makeIcon('user')
+const Phone = makeIcon('phone')
+const ChevronRight = makeIcon('chevron-right')
+const ChevronLeft = makeIcon('chevron-left')
+const Percent = makeIcon('discount')
+/* Loading spinner keeps direct UIIcon for spin prop */
+const Loader2: React.FC<{ size?: number; className?: string }> = ({ size = 20, className }) => (
+  <UIIcon name="loading" spin size={size} className={className} />
+)
 
 /**
  * TYPES
@@ -675,7 +679,7 @@ export default function CheckoutPage() {
       }
       const { orderId } = await response.json()
       clearCart()
-      toast.success('Order placed successfully 🎉')
+      toast.success('Order placed successfully')
       router.push(`/orders/${orderId}`)
     } catch (e) {
       toast.error(e?.message || 'Order failed')
@@ -1176,7 +1180,7 @@ export default function CheckoutPage() {
       >
         <div className="space-y-6">
           <PaymentMethodManager
-            onPaymentMethodSelect={m => {
+            onPaymentMethodSelectAction={m => {
               setSelectedPaymentMethod(m)
               setErrors(prev => {
                 const copy = { ...prev }
@@ -1661,17 +1665,19 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      {/* SMART PHONE PROMPT */}
-      <SmartPhonePrompt
-        isOpen={phonePromptOpen}
-        onClose={hidePhonePrompt}
-        onSave={async (phone: string) => {
-          await savePhoneNumber(phone)
-          setOrderPlacer(prev => ({ ...prev, phone }))
+      {/* PHONE CAPTURE DIALOG (replaces deprecated SmartPhonePrompt) */}
+      <PhoneCaptureDialog
+        open={phonePromptOpen}
+        onCloseAction={hidePhonePrompt}
+        onSaveAction={async (e164, meta) => {
+          await savePhoneNumber(e164)
+          // Prefer national formatted version if available; fallback to E.164
+          setOrderPlacer(prev => ({ ...prev, phone: meta.national || e164 }))
         }}
+        initialPhone={currentPhone}
         context="checkout"
-        currentPhone={currentPhone}
         userName={userName}
+        requirePhone
       />
     </div>
   )

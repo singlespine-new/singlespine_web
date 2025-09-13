@@ -3,18 +3,21 @@
 import { useState, useCallback, useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import {
-  Heart,
-  Package,
-  ShoppingCart,
-  Star,
-  Truck,
-  MapPin,
-  Clock
-} from 'lucide-react'
+import { makeIcon } from '@/components/ui/icon'
+
+/* Icon adapters generated via makeIcon utility for consistency and reduced boilerplate */
+const Heart = makeIcon('heart', { size: 20 })
+const Package = makeIcon('package', { size: 20 })
+const ShoppingCart = makeIcon('cart', { size: 20 })
+const Star = makeIcon('star', { size: 16 })
+const Truck = makeIcon('truck', { size: 18 })
+const MapPin = makeIcon('location', { size: 16 })
+const Clock = makeIcon('clock', { size: 16 })
+
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { Product } from '@/types'
+import { buildShopHref } from '@/lib/shopSlug'
 import { useAuth, triggerAuth } from '@/lib/auth-utils'
 import { useCartStore } from '@/lib/store/cart'
 import { useWishlistStore } from '@/lib/store/wishlist'
@@ -25,7 +28,7 @@ interface ProductCardProps {
   className?: string
   showQuickAdd?: boolean
   viewMode?: 'grid' | 'list'
-  onClick?: (product: Product) => void
+  onClickAction?: (product: Product) => void
 }
 
 /* -------------------------------------------------------------------------- */
@@ -41,35 +44,8 @@ function calcDiscount(comparePrice?: number | null, price?: number) {
 }
 
 function vendorSlugFromProduct(product: Product) {
-  // Prefer explicit shop slug metadata if present
-  // Possible locations: product.shopSlug, product.metadata?.shopSlug, or fallback to vendor-derived slug
-  const meta = product as {
-    shopSlug?: string
-    shop_slug?: string
-    metadata?: { shopSlug?: string; shop_slug?: string }
-    shopId?: string
-  }
-  const explicit =
-    meta.shopSlug ||
-    meta.shop_slug ||
-    meta.metadata?.shopSlug ||
-    meta.metadata?.shop_slug ||
-    meta.shopId // sometimes shopId might already be the slug
-
-  if (explicit && typeof explicit === 'string') {
-    // Normalize: lowercase, collapse multiple hyphens
-    return `/shop/${encodeURIComponent(explicit.toLowerCase().replace(/-+/g, '-'))}`
-  }
-  const vendor = product.vendor
-  if (!vendor) return '#'
-  // Fallback: derive from vendor name, collapsing runs of hyphens/spaces
-  const derived = vendor
-    .toLowerCase()
-    .trim()
-    .replace(/[\s_]+/g, '-')
-    .replace(/-+/g, '-')         // collapse multiple hyphens
-    .replace(/^-|-$/g, '')       // trim leading/trailing hyphen
-  return `/shop/${encodeURIComponent(derived)}`
+  // Pass a ProductLike-compatible subset (avoids full Product type mismatch)
+  return buildShopHref({ vendor: product.vendor, shopId: product.shopId })
 }
 
 const AVAILABILITY_STYLES: Record<
@@ -656,7 +632,7 @@ export default function ProductCard({
   className,
   showQuickAdd = true,
   viewMode = 'grid',
-  onClick
+  onClickAction
 }: ProductCardProps) {
   const { isAuthenticated } = useAuth()
   const { addItem } = useCartStore()
@@ -676,8 +652,8 @@ export default function ProductCard({
     (product.stock > 0 && product.stock <= 5)
 
   const handleCardClick = useCallback(() => {
-    onClick?.(product)
-  }, [onClick, product])
+    onClickAction?.(product)
+  }, [onClickAction, product])
 
   const handleQuickAdd = useCallback(
     async (e: React.MouseEvent) => {
