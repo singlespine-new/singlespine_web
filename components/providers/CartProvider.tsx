@@ -102,8 +102,8 @@ export default function UIProvider({ children }: UIProviderProps) {
   return (
     <>
       {children}
-      <CartSidebar isOpen={isOpen} onClose={closeCart} />
-      <WishlistSidebar isOpen={isWishlistOpen} onClose={closeWishlist} />
+      <CartSidebar isOpen={isOpen} onCloseAction={closeCart} />
+      <WishlistSidebar isOpen={isWishlistOpen} onCloseAction={closeWishlist} />
     </>
   )
 }
