@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import ProductCard from "../ui/ProductCard"
 import { Product, Category } from '@/types'
 import { PRODUCT_CATEGORIES } from '@/constants/categories'
 import { getMockProductsByCategory, getMockFeaturedProducts } from '@/data/mockData'
@@ -60,7 +59,7 @@ const Categories = ({
         <div className="text-center py-8">
           <p className="text-gray-500">No products available at the moment.</p>
         </div>
-      </div>
+      </div >
     )
   }
 
