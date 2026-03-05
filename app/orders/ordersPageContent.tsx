@@ -672,9 +672,8 @@ export default function OrdersPageContent() {
   const listContainerRef = useRef<HTMLDivElement | null>(null)
 
   const orderCardWrapperClass = [
-    'relative rounded-2xl border border-border/50 bg-gradient-to-br from-card to-card/80 shadow-sm',
-    reducedMotion ? 'transition-shadow' : 'hover:shadow-xl transition-all duration-300',
-    reducedMotion ? '' : 'group hover:-translate-y-[2px]'
+    'relative rounded-2xl border border-border/40 bg-card',
+    'transition-shadow duration-200 hover:shadow-md'
   ].join(' ')
 
   const renderOrderCard = (order: OrderSummary) => {
@@ -773,11 +772,8 @@ export default function OrdersPageContent() {
           <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6 mb-8">
             <div className="space-y-4">
               <div className="flex items-center gap-4">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-primary/20 rounded-2xl blur-xl" />
-                  <div className="relative p-3 bg-gradient-to-br from-primary/10 to-primary/20 rounded-2xl border border-primary/20">
-                    <UIIcon name="package" size={32} className="text-primary" />
-                  </div>
+                <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+                  <UIIcon name="package" size={32} className="text-primary" />
                 </div>
                 <div>
                   <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
@@ -888,121 +884,65 @@ export default function OrdersPageContent() {
 
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
-            <div
-              className={[
-                'group relative overflow-hidden rounded-2xl p-4 md:p-6 border border-border/50 bg-gradient-to-br from-card to-card/80 shadow-sm',
-                reducedMotion ? 'transition-shadow' : 'hover:shadow-xl transition-all duration-300',
-                reducedMotion ? '' : 'hover:-translate-y-[2px]'
-              ].join(' ')}
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="relative">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-muted-foreground text-sm font-medium">
-                    Total Orders
-                  </span>
-                  <div className="p-2 bg-blue-500/10 rounded-xl">
-                    <UIIcon name="package" size={20} className="text-blue-500" />
-                  </div>
+            <div className="rounded-xl p-4 md:p-6 border border-border/40 bg-card transition-shadow hover:shadow-md">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-muted-foreground text-sm font-medium">Total Orders</span>
+                <div className="p-2 bg-blue-500/10 rounded-xl">
+                  <UIIcon name="package" size={20} className="text-blue-500" />
                 </div>
-                <div className="text-2xl md:text-3xl font-bold text-foreground mb-1">
-                  {stats.total}
-                </div>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <UIIcon name="trending-up" size={12} />
-                  <span>All time</span>
-                </div>
+              </div>
+              <div className="text-2xl md:text-3xl font-bold text-foreground mb-1">{stats.total}</div>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <UIIcon name="trending-up" size={12} />
+                <span>All time</span>
               </div>
             </div>
 
-            <div
-              className={[
-                'group relative overflow-hidden rounded-2xl p-4 md:p-6 border border-border/50 bg-gradient-to-br from-card to-card/80 shadow-sm',
-                reducedMotion ? 'transition-shadow' : 'hover:shadow-xl transition-all duration-300',
-                reducedMotion ? '' : 'hover:-translate-y-[2px]'
-              ].join(' ')}
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="relative">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-muted-foreground text-sm font-medium">
-                    Delivered
-                  </span>
-                  <div className="p-2 bg-emerald-500/10 rounded-xl">
-                    <UIIcon
-                      name="success"
-                      size={20}
-                      className="text-emerald-500"
-                    />
-                  </div>
+            <div className="rounded-xl p-4 md:p-6 border border-border/40 bg-card transition-shadow hover:shadow-md">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-muted-foreground text-sm font-medium">Delivered</span>
+                <div className="p-2 bg-emerald-500/10 rounded-xl">
+                  <UIIcon name="success" size={20} className="text-emerald-500" />
                 </div>
-                <div className="text-2xl md:text-3xl font-bold text-foreground mb-1">
-                  {stats.delivered}
-                </div>
-                <div className="flex items-center gap-1 text-xs text-emerald-600">
-                  <UIIcon name="shield" size={12} />
-                  <span>Successfully</span>
-                </div>
+              </div>
+              <div className="text-2xl md:text-3xl font-bold text-foreground mb-1">{stats.delivered}</div>
+              <div className="flex items-center gap-1 text-xs text-emerald-600">
+                <UIIcon name="shield" size={12} />
+                <span>Successfully</span>
               </div>
             </div>
 
-            <div
-              className={[
-                'group relative overflow-hidden rounded-2xl p-4 md:p-6 border border-border/50 bg-gradient-to-br from-card to-card/80 shadow-sm',
-                reducedMotion ? 'transition-shadow' : 'hover:shadow-xl transition-all duration-300',
-                reducedMotion ? '' : 'hover:-translate-y-[2px]'
-              ].join(' ')}
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="relative">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-muted-foreground text-sm font-medium">
-                    Pending
-                  </span>
-                  <div className="p-2 bg-amber-500/10 rounded-xl">
-                    <UIIcon name="clock" size={20} className="text-amber-500" />
-                  </div>
+            <div className="rounded-xl p-4 md:p-6 border border-border/40 bg-card transition-shadow hover:shadow-md">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-muted-foreground text-sm font-medium">Pending</span>
+                <div className="p-2 bg-amber-500/10 rounded-xl">
+                  <UIIcon name="clock" size={20} className="text-amber-500" />
                 </div>
-                <div className="text-2xl md:text-3xl font-bold text-foreground mb-1">
-                  {stats.pending}
-                </div>
-                <div className="flex items-center gap-1 text-xs text-amber-600">
-                  <UIIcon name="zap" size={12} />
-                  <span>Processing</span>
-                </div>
+              </div>
+              <div className="text-2xl md:text-3xl font-bold text-foreground mb-1">{stats.pending}</div>
+              <div className="flex items-center gap-1 text-xs text-amber-600">
+                <UIIcon name="zap" size={12} />
+                <span>Processing</span>
               </div>
             </div>
 
-            <div
-              className={[
-                'group relative overflow-hidden rounded-2xl p-4 md:p-6 border border-border/50 bg-gradient-to-br from-card to-card/80 shadow-sm',
-                reducedMotion ? 'transition-shadow' : 'hover:shadow-xl transition-all duration-300',
-                reducedMotion ? '' : 'hover:-translate-y-[2px]'
-              ].join(' ')}
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="relative">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-muted-foreground text-sm font-medium">
-                    Total Spent
-                  </span>
-                  <div className="p-2 bg-primary/10 rounded-xl">
-                    <UIIcon name="star" size={20} className="text-primary" />
-                  </div>
+            <div className="rounded-xl p-4 md:p-6 border border-border/40 bg-card transition-shadow hover:shadow-md">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-muted-foreground text-sm font-medium">Total Spent</span>
+                <div className="p-2 bg-primary/10 rounded-xl">
+                  <UIIcon name="star" size={20} className="text-primary" />
                 </div>
-                <div className="text-2xl md:text-3xl font-bold text-foreground mb-1">
-                  ₵{stats.totalSpent.toFixed(2)}
-                </div>
-                <div className="flex items-center gap-1 text-xs text-primary">
-                  <UIIcon name="trending-up" size={12} />
-                  <span>Lifetime value</span>
-                </div>
+              </div>
+              <div className="text-2xl md:text-3xl font-bold text-foreground mb-1">₵{stats.totalSpent.toFixed(2)}</div>
+              <div className="flex items-center gap-1 text-xs text-primary">
+                <UIIcon name="trending-up" size={12} />
+                <span>Lifetime value</span>
               </div>
             </div>
           </div>
 
           {/* Filter + Search */}
-          <div className="mb-8 p-4 md:p-6 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-lg backdrop-blur-sm space-y-4">
+          <div className="mb-8 p-4 md:p-6 bg-card rounded-2xl border border-border/40 space-y-4">
             <div className="flex flex-col xl:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative group">

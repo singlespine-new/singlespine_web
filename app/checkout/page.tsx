@@ -133,7 +133,7 @@ const SectionCard = ({
   return (
     <section
       id={id}
-      className={`rounded-2xl bg-white/90 backdrop-blur-sm border ${accentClasses} shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition`}
+      className={`rounded-2xl bg-card border ${accentClasses} shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition`}
     >
       <div className="flex items-start gap-3 p-6 pb-0">
         <div className="p-2 rounded-xl bg-primary/10 text-primary shrink-0 mt-0.5">
@@ -849,7 +849,7 @@ export default function CheckoutPage() {
                 onChange={e => handleRecipientChange('recipientName', e.target.value)}
                 placeholder="e.g., Ama Serwaa"
                 aria-invalid={!!errors.recipient_recipientName}
-                className={`w-full px-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition ${errors.recipient_recipientName ? 'border-red-300 bg-red-50' : 'border-input'
+                className={`w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition ${errors.recipient_recipientName ? 'border-red-300 bg-red-50' : 'border-input'
                   }`}
               />
               {errors.recipient_recipientName && (
@@ -867,7 +867,7 @@ export default function CheckoutPage() {
                 value={recipientInfo.relationship}
                 onChange={e => handleRecipientChange('relationship', e.target.value)}
                 aria-invalid={!!errors.recipient_relationship}
-                className={`w-full px-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition appearance-none ${errors.recipient_relationship ? 'border-red-300 bg-red-50' : 'border-input'
+                className={`w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition appearance-none ${errors.recipient_relationship ? 'border-red-300 bg-red-50' : 'border-input'
                   }`}
               >
                 <option value="">Select relationship</option>
@@ -911,7 +911,7 @@ export default function CheckoutPage() {
                 onChange={e => handleRecipientChange('phone', e.target.value)}
                 placeholder="0XXX XXX XXX"
                 aria-invalid={!!errors.recipient_phone}
-                className={`w-full px-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition ${errors.recipient_phone ? 'border-red-300 bg-red-50' : 'border-input'
+                className={`w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition ${errors.recipient_phone ? 'border-red-300 bg-red-50' : 'border-input'
                   }`}
               />
               {errors.recipient_phone && (
@@ -930,7 +930,7 @@ export default function CheckoutPage() {
                 value={recipientInfo.alternatePhone}
                 onChange={e => handleRecipientChange('alternatePhone', e.target.value)}
                 placeholder="Backup (optional)"
-                className="w-full px-4 py-3 rounded-xl border border-input bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition"
+                className="w-full px-4 py-3 rounded-xl border border-input bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition"
               />
             </div>
 
@@ -946,7 +946,7 @@ export default function CheckoutPage() {
                 rows={3}
                 placeholder="Street, house number, area..."
                 aria-invalid={!!errors.recipient_addressLine}
-                className={`w-full px-4 py-3 rounded-xl border resize-none bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition ${errors.recipient_addressLine ? 'border-red-300 bg-red-50' : 'border-input'
+                className={`w-full px-4 py-3 rounded-xl border resize-none bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition ${errors.recipient_addressLine ? 'border-red-300 bg-red-50' : 'border-input'
                   }`}
               />
               {errors.recipient_addressLine && (
@@ -965,7 +965,7 @@ export default function CheckoutPage() {
                 onChange={e => handleRecipientChange('city', e.target.value)}
                 placeholder="Accra, Kumasi..."
                 aria-invalid={!!errors.recipient_city}
-                className={`w-full px-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition ${errors.recipient_city ? 'border-red-300 bg-red-50' : 'border-input'
+                className={`w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition ${errors.recipient_city ? 'border-red-300 bg-red-50' : 'border-input'
                   }`}
               />
               {errors.recipient_city && (
@@ -983,7 +983,7 @@ export default function CheckoutPage() {
                 value={recipientInfo.region}
                 onChange={e => handleRecipientChange('region', e.target.value)}
                 aria-invalid={!!errors.recipient_region}
-                className={`w-full px-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition appearance-none ${errors.recipient_region ? 'border-red-300 bg-red-50' : 'border-input'
+                className={`w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition appearance-none ${errors.recipient_region ? 'border-red-300 bg-red-50' : 'border-input'
                   }`}
               >
                 <option value="">Select region</option>
@@ -1019,7 +1019,7 @@ export default function CheckoutPage() {
                 value={recipientInfo.landmark}
                 onChange={e => handleRecipientChange('landmark', e.target.value)}
                 placeholder="Near school, mosque etc. (optional)"
-                className="w-full px-4 py-3 rounded-xl border border-input bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition"
+                className="w-full px-4 py-3 rounded-xl border border-input bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition"
               />
             </div>
 
@@ -1031,7 +1031,7 @@ export default function CheckoutPage() {
                 onChange={e => handleRecipientChange('notes', e.target.value)}
                 rows={2}
                 placeholder="Leave at gate, call upon arrival..."
-                className="w-full px-4 py-3 rounded-xl border border-input bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition resize-none"
+                className="w-full px-4 py-3 rounded-xl border border-input bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition resize-none"
               />
             </div>
           </div>
@@ -1053,7 +1053,7 @@ export default function CheckoutPage() {
                   <input
                     value={orderPlacer.fullName}
                     onChange={e => handleOrderPlacerChange('fullName', e.target.value)}
-                    className={`w-full px-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition ${errors.placer_fullName ? 'border-red-300 bg-red-50' : 'border-input'
+                    className={`w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition ${errors.placer_fullName ? 'border-red-300 bg-red-50' : 'border-input'
                       }`}
                   />
                   {errors.placer_fullName && (
@@ -1069,7 +1069,7 @@ export default function CheckoutPage() {
                     type="email"
                     value={orderPlacer.email}
                     onChange={e => handleOrderPlacerChange('email', e.target.value)}
-                    className={`w-full px-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition ${errors.placer_email ? 'border-red-300 bg-red-50' : 'border-input'
+                    className={`w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition ${errors.placer_email ? 'border-red-300 bg-red-50' : 'border-input'
                       }`}
                   />
                   {errors.placer_email && (
@@ -1084,7 +1084,7 @@ export default function CheckoutPage() {
                   <input
                     value={orderPlacer.phone}
                     onChange={e => handleOrderPlacerChange('phone', e.target.value)}
-                    className={`w-full px-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition ${errors.placer_phone ? 'border-red-300 bg-red-50' : 'border-input'
+                    className={`w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition ${errors.placer_phone ? 'border-red-300 bg-red-50' : 'border-input'
                       }`}
                   />
                   {errors.placer_phone && (
@@ -1308,7 +1308,7 @@ export default function CheckoutPage() {
             Payment Method
           </h3>
           {selectedPaymentMethod ? (
-            <div className="p-4 rounded-xl border bg-white flex items-center justify-between">
+            <div className="p-4 rounded-xl border bg-background flex items-center justify-between">
               <div className="text-sm">
                 <p className="font-medium">
                   {selectedPaymentMethod.nickname || selectedPaymentMethod.displayName}
@@ -1391,7 +1391,7 @@ export default function CheckoutPage() {
               if (discountStatus !== 'idle') setDiscountStatus('idle')
             }}
             placeholder="Enter code (e.g., SINGLE10)"
-            className="flex-1 px-4 py-3 rounded-xl border border-input bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
+            className="flex-1 px-4 py-3 rounded-xl border border-input bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
             aria-label="Discount code"
           />
           <Button
@@ -1430,7 +1430,7 @@ export default function CheckoutPage() {
    */
   const SummarySidebar = (
     <aside className="lg:sticky lg:top-28 space-y-6">
-      <div className="rounded-2xl bg-white/90 backdrop-blur-sm border border-border/30 p-6 shadow-sm">
+      <div className="rounded-2xl bg-card border border-border/30 p-6 shadow-sm">
         <div className="flex items-center gap-3 mb-5">
           <div className="p-2 bg-primary/10 rounded-xl">
             <Package className="w-5 h-5 text-primary" />
@@ -1570,7 +1570,7 @@ export default function CheckoutPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       {/* HEADER */}
-      <header className="sticky top-0 z-40 backdrop-blur border-b bg-white/80">
+      <header className="sticky top-0 z-40 backdrop-blur border-b bg-background/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 gap-4">
             <div className="flex items-center gap-3">
@@ -1613,7 +1613,7 @@ export default function CheckoutPage() {
       </main>
 
       {/* MOBILE BOTTOM BAR */}
-      <div className="lg:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur border-t border-border/40 p-4 z-50">
+      <div className="lg:hidden fixed bottom-0 inset-x-0 bg-background/95 backdrop-blur border-t border-border/40 p-4 z-50">
         <div className="flex items-center justify-between gap-4">
           {currentStep !== 'recipient' ? (
             <Button

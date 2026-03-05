@@ -230,6 +230,7 @@ export default function ProductDetailsModal({
   const [quantity, setQuantity] = useState(1)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [isAddingToCart, setIsAddingToCart] = useState(false)
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false)
 
   // Refs for a11y / focus management
   const dialogRef = useRef<HTMLDivElement | null>(null)
@@ -504,58 +505,50 @@ export default function ProductDetailsModal({
           'animate-in zoom-in-95 fade-in slide-in-from-top-4 duration-200',
           // Full screen on mobile, rounded card on sm+
           'rounded-none sm:rounded-2xl',
-          'max-h-[100dvh] sm:max-h-[90vh]'
+          'max-h-dvh sm:max-h-[90vh]'
         )}
       >
-        {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-border/60 bg-card/95 px-3 sm:px-5 py-3 sm:py-4 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-          <h2 className="text-base sm:text-lg font-semibold tracking-tight">
-            Product Details
-          </h2>
-          <div className="flex items-center gap-1.5">
-            <Button
-              ref={firstInteractiveRef}
-              variant="ghost"
-              size="sm"
-              onClick={handleShare}
-              className="h-9 w-9 p-0 rounded-full hover:bg-muted"
-              aria-label="Share product"
-            >
-              <Share2 className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleWishlistToggle}
+        {/* Header — minimal action bar */}
+        <div className="sticky top-0 z-10 flex items-center justify-end gap-1.5 border-b border-border/60 bg-card/95 px-3 sm:px-5 py-2.5 sm:py-3 backdrop-blur supports-backdrop-filter:bg-card/80">
+          <Button
+            ref={firstInteractiveRef}
+            variant="ghost"
+            size="sm"
+            onClick={handleShare}
+            className="h-9 w-9 p-0 rounded-full hover:bg-muted"
+            aria-label="Share product"
+          >
+            <Share2 className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleWishlistToggle}
+            className={cn(
+              'h-9 w-9 p-0 rounded-full hover:bg-muted relative transition',
+              isFavorited && 'text-red-500'
+            )}
+            aria-pressed={isFavorited}
+            aria-label={isFavorited ? 'Remove from wishlist' : 'Add to wishlist'}
+          >
+            <Heart
               className={cn(
-                'h-9 w-9 p-0 rounded-full hover:bg-muted relative transition',
-                isFavorited && 'text-red-500'
+                'w-5 h-5 transition-colors',
+                isFavorited
+                  ? 'fill-red-500 text-red-500'
+                  : 'text-muted-foreground'
               )}
-              aria-pressed={isFavorited}
-              aria-label={isFavorited ? 'Remove from wishlist' : 'Add to wishlist'}
-            >
-              <Heart
-                className={cn(
-                  'w-5 h-5 transition-colors',
-                  isFavorited
-                    ? 'fill-red-500 text-red-500'
-                    : 'text-muted-foreground'
-                )}
-              />
-              <span className="sr-only">
-                {isFavorited ? 'Remove from wishlist' : 'Add to wishlist'}
-              </span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onCloseAction}
-              className="h-9 w-9 p-0 rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors"
-              aria-label="Close modal"
-            >
-              <X className="w-5 h-5" />
-            </Button>
-          </div>
+            />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onCloseAction}
+            className="h-9 w-9 p-0 rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors"
+            aria-label="Close modal"
+          >
+            <X className="w-5 h-5" />
+          </Button>
         </div>
 
         {/* Content */}
@@ -575,16 +568,7 @@ export default function ProductDetailsModal({
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 priority
               />
-              {discountPct > 0 && (
-                <div className="absolute top-4 left-4 rounded-md bg-destructive px-2 py-1 text-[11px] font-semibold tracking-wide text-destructive-foreground shadow">
-                  -{discountPct}%
-                </div>
-              )}
-              {product.isFeatured && (
-                <div className="absolute top-4 right-4 rounded-md bg-primary px-2 py-1 text-[11px] font-semibold tracking-wide text-primary-foreground shadow">
-                  Featured
-                </div>
-              )}
+
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1">
                 {product.images.map((_, i) => (
                   <span
@@ -602,7 +586,7 @@ export default function ProductDetailsModal({
             {product.images.length > 1 && (
               <div
                 ref={thumbnailsContainerRef}
-                className="flex gap-3 overflow-x-auto pb-1"
+                className="flex gap-3 overflow-x-auto pb-1 scrollbar-none"
                 aria-label="Product images"
               >
                 {product.images.map((img, i) => {
@@ -614,7 +598,7 @@ export default function ProductDetailsModal({
                       onClick={() => setSelectedImageIndex(i)}
                       onKeyDown={(e) => handleThumbnailKey(e, i)}
                       className={cn(
-                        'relative aspect-square h-12 w-12 sm:h-16 sm:w-16 flex-shrink-0 overflow-hidden rounded-lg border transition',
+                        'relative aspect-square h-12 w-12 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-lg border transition',
                         active
                           ? 'border-primary ring-2 ring-primary/40'
                           : 'border-border hover:border-primary/60 hover:bg-muted/40'
@@ -661,9 +645,31 @@ export default function ProductDetailsModal({
                 />
               </div>
 
-              <p className="text-sm leading-relaxed text-muted-foreground line-clamp-[10]">
-                {product.description}
-              </p>
+              {/* Featured label — inline */}
+              {product.isFeatured && (
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
+                  <Star className="h-3 w-3 fill-primary" />
+                  Featured Product
+                </span>
+              )}
+
+              {/* Description — expandable */}
+              <div className="relative">
+                <p className={cn(
+                  'text-sm leading-relaxed text-muted-foreground',
+                  !descriptionExpanded && 'line-clamp-3'
+                )}>
+                  {product.description}
+                </p>
+                {product.description && product.description.length > 150 && (
+                  <button
+                    onClick={() => setDescriptionExpanded(!descriptionExpanded)}
+                    className="text-xs font-medium text-primary hover:underline mt-1"
+                  >
+                    {descriptionExpanded ? 'Show less' : 'Read more'}
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Pricing */}
@@ -678,14 +684,11 @@ export default function ProductDetailsModal({
                       {formatCurrency(product.comparePrice)}
                     </span>
                   )}
-                {savings > 0 && (
-                  <span className="rounded-full bg-secondary px-2 py-1 text-xs font-semibold text-secondary-foreground">
-                    Save {formatCurrency(savings)}
+                {discountPct > 0 && (
+                  <span className="text-xs font-semibold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">
+                    -{discountPct}%
                   </span>
                 )}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Inclusive of VAT (where applicable)
               </div>
             </div>
 
@@ -707,7 +710,7 @@ export default function ProductDetailsModal({
             />
 
             {/* Actions */}
-            <div className="space-y-4">
+            <div className="space-y-3">
               <Button
                 onClick={handleAddToCart}
                 disabled={
@@ -724,12 +727,31 @@ export default function ProductDetailsModal({
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                     Adding...
                   </div>
+                ) : product.availability === 'OUT_OF_STOCK' || currentStock === 0 ? (
+                  'Out of Stock'
                 ) : (
                   <div className="flex items-center gap-2">
                     <ShoppingCart className="w-5 h-5" />
                     Add to Cart · {formatCurrency(currentPrice * quantity)}
                   </div>
                 )}
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => {
+                  handleAddToCart()
+                  // In future: redirect to checkout
+                }}
+                disabled={
+                  isAddingToCart ||
+                  product.availability === 'OUT_OF_STOCK' ||
+                  currentStock === 0
+                }
+                className="w-full h-11 font-semibold text-sm"
+                size="lg"
+              >
+                Buy Now
               </Button>
 
               <div className="flex items-center justify-between rounded-lg border border-border/70 bg-muted/40 px-4 py-3 text-xs sm:text-sm">
@@ -747,7 +769,7 @@ export default function ProductDetailsModal({
             </div>
 
             {/* Meta */}
-            <div className="grid gap-2 text-xs sm:text-sm">
+            <div className="grid gap-2 text-xs sm:text-sm border-t border-border/40 pt-4">
               {product.origin && (
                 <div className="flex justify-between gap-4">
                   <span className="text-muted-foreground">Origin</span>
@@ -777,17 +799,6 @@ export default function ProductDetailsModal({
                   </div>
                 </div>
               )}
-            </div>
-
-            <div className="pt-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onCloseAction}
-                className="text-xs text-muted-foreground hover:text-foreground"
-              >
-                Close
-              </Button>
             </div>
           </div>
         </div>

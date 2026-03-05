@@ -77,7 +77,7 @@ const SectionCard: React.FC<{
   return (
     <section
       id={id}
-      className="group rounded-2xl bg-white/90 backdrop-blur-sm border border-border/30 shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition"
+      className="group rounded-2xl bg-card border border-border/30 shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition"
     >
       <header className="flex items-start justify-between gap-4 px-5 py-5 border-b border-border/40">
         <div className="flex items-start gap-3">
@@ -682,7 +682,7 @@ export default function ProfilePage() {
                 <input
                   value={profile.name}
                   onChange={e => setProfile(p => ({ ...p, name: e.target.value }))}
-                  className={`w-full px-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm ${profileErrors.name ? 'border-red-300 bg-red-50' : 'border-input'}`}
+                  className={`w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm ${profileErrors.name ? 'border-red-300 bg-red-50' : 'border-input'}`}
                   placeholder="Your full name"
                   aria-invalid={!!profileErrors.name}
                 />
@@ -700,7 +700,7 @@ export default function ProfilePage() {
                   type="email"
                   value={profile.email}
                   onChange={e => setProfile(p => ({ ...p, email: e.target.value }))}
-                  className={`w-full px-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm ${profileErrors.email ? 'border-red-300 bg-red-50' : 'border-input'}`}
+                  className={`w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm ${profileErrors.email ? 'border-red-300 bg-red-50' : 'border-input'}`}
                   placeholder="you@example.com"
                   aria-invalid={!!profileErrors.email}
                 />
@@ -717,7 +717,7 @@ export default function ProfilePage() {
                 <input
                   value={profile.phoneNumber}
                   onChange={e => setProfile(p => ({ ...p, phoneNumber: e.target.value }))}
-                  className={`w-full px-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm ${profileErrors.phoneNumber ? 'border-red-300 bg-red-50' : 'border-input'}`}
+                  className={`w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm ${profileErrors.phoneNumber ? 'border-red-300 bg-red-50' : 'border-input'}`}
                   placeholder="0XXX XXX XXX"
                   aria-invalid={!!profileErrors.phoneNumber}
                 />
@@ -771,7 +771,7 @@ export default function ProfilePage() {
               value={addressSearch}
               onChange={e => setAddressSearch(e.target.value)}
               placeholder="Search label, city or region..."
-              className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-input bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
+              className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-input bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
             />
           </div>
           <div className="flex gap-2 text-[11px] text-muted-foreground">
@@ -791,7 +791,7 @@ export default function ProfilePage() {
             {filteredAddresses.map(a => (
               <li
                 key={a.id}
-                className={`relative p-4 rounded-xl border-2 transition group bg-white ${a.isDefault ? 'border-primary bg-primary/5' : 'border-border/30 hover:border-primary/40'
+                className={`relative p-4 rounded-xl border-2 transition group bg-background ${a.isDefault ? 'border-primary bg-primary/5' : 'border-border/30 hover:border-primary/40'
                   }`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -953,7 +953,7 @@ export default function ProfilePage() {
             className="fixed inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setAddressModalOpen(false)}
           />
-          <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-xl border border-border/40 overflow-hidden">
+          <div className="relative w-full max-w-2xl bg-background rounded-2xl shadow-xl border border-border/40 overflow-hidden">
             <div className="flex items-center justify-between px-6 py-5 border-b border-border/40 bg-gradient-to-r from-primary/5 to-transparent">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -989,7 +989,7 @@ export default function ProfilePage() {
                       setAddressForm(f => ({ ...f, label: e.target.value }))
                       if (addressErrors.label) setAddressErrors(er => ({ ...er, label: '' }))
                     }}
-                    className={`w-full px-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm ${addressErrors.label ? 'border-red-300 bg-red-50' : 'border-input'}`}
+                    className={`w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm ${addressErrors.label ? 'border-red-300 bg-red-50' : 'border-input'}`}
                     placeholder="Home, Mom, Office..."
                     aria-invalid={!!addressErrors.label}
                   />
@@ -1003,7 +1003,7 @@ export default function ProfilePage() {
                       setAddressForm(f => ({ ...f, recipientName: e.target.value }))
                       if (addressErrors.recipientName) setAddressErrors(er => ({ ...er, recipientName: '' }))
                     }}
-                    className={`w-full px-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm ${addressErrors.recipientName ? 'border-red-300 bg-red-50' : 'border-input'}`}
+                    className={`w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm ${addressErrors.recipientName ? 'border-red-300 bg-red-50' : 'border-input'}`}
                     placeholder="e.g., Ama Serwaa"
                     aria-invalid={!!addressErrors.recipientName}
                   />
@@ -1017,7 +1017,7 @@ export default function ProfilePage() {
                       setAddressForm(f => ({ ...f, phone: e.target.value }))
                       if (addressErrors.phone) setAddressErrors(er => ({ ...er, phone: '' }))
                     }}
-                    className={`w-full px-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm ${addressErrors.phone ? 'border-red-300 bg-red-50' : 'border-input'}`}
+                    className={`w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm ${addressErrors.phone ? 'border-red-300 bg-red-50' : 'border-input'}`}
                     placeholder="0XXX XXX XXX"
                     aria-invalid={!!addressErrors.phone}
                   />
@@ -1031,7 +1031,7 @@ export default function ProfilePage() {
                       setAddressForm(f => ({ ...f, region: e.target.value }))
                       if (addressErrors.region) setAddressErrors(er => ({ ...er, region: '' }))
                     }}
-                    className={`w-full px-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm ${addressErrors.region ? 'border-red-300 bg-red-50' : 'border-input'}`}
+                    className={`w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm ${addressErrors.region ? 'border-red-300 bg-red-50' : 'border-input'}`}
                     aria-invalid={!!addressErrors.region}
                   >
                     <option value="">Select region</option>
@@ -1050,7 +1050,7 @@ export default function ProfilePage() {
                       if (addressErrors.addressLine) setAddressErrors(er => ({ ...er, addressLine: '' }))
                     }}
                     rows={3}
-                    className={`w-full px-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm resize-none ${addressErrors.addressLine ? 'border-red-300 bg-red-50' : 'border-input'}`}
+                    className={`w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm resize-none ${addressErrors.addressLine ? 'border-red-300 bg-red-50' : 'border-input'}`}
                     placeholder="House number, street, area, landmark..."
                     aria-invalid={!!addressErrors.addressLine}
                   />
@@ -1064,7 +1064,7 @@ export default function ProfilePage() {
                       setAddressForm(f => ({ ...f, city: e.target.value }))
                       if (addressErrors.city) setAddressErrors(er => ({ ...er, city: '' }))
                     }}
-                    className={`w-full px-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm ${addressErrors.city ? 'border-red-300 bg-red-50' : 'border-input'}`}
+                    className={`w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm ${addressErrors.city ? 'border-red-300 bg-red-50' : 'border-input'}`}
                     placeholder="Accra, Kumasi..."
                     aria-invalid={!!addressErrors.city}
                   />
@@ -1075,7 +1075,7 @@ export default function ProfilePage() {
                   <select
                     value={addressForm.relationship}
                     onChange={e => setAddressForm(f => ({ ...f, relationship: e.target.value }))}
-                    className="w-full px-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm border-input"
+                    className="w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm border-input"
                   >
                     <option value="">Select relationship</option>
                     {['Mother', 'Father', 'Sister', 'Brother', 'Grandmother', 'Grandfather', 'Aunt', 'Uncle', 'Cousin', 'Friend', 'Spouse', 'Child', 'Other'].map(r => (
@@ -1088,7 +1088,7 @@ export default function ProfilePage() {
                   <input
                     value={addressForm.notes || ''}
                     onChange={e => setAddressForm(f => ({ ...f, notes: e.target.value }))}
-                    className="w-full px-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm border-input"
+                    className="w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm border-input"
                     placeholder="Delivery instructions, timing, etc."
                   />
                 </div>

@@ -287,7 +287,14 @@ function GridLayout(props: InternalCardProps) {
           </div>
         )}
 
-
+        {/* Out of Stock overlay */}
+        {isOutOfStock && (
+          <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
+            <span className="text-xs sm:text-sm font-semibold text-muted-foreground bg-background/80 px-3 py-1 rounded-full">
+              Out of Stock
+            </span>
+          </div>
+        )}
 
         {/* Wishlist — appears on hover */}
         <div className="absolute right-1.5 bottom-1.5 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
@@ -340,21 +347,42 @@ function GridLayout(props: InternalCardProps) {
           {product.name}
         </h3>
 
-        {/* Price Row */}
-        <div className="flex items-baseline gap-1.5 flex-wrap">
-          <span className="text-sm sm:text-base font-bold tracking-tight text-foreground">
-            {formatCurrency(product.price)}
-          </span>
-          {product.comparePrice && product.comparePrice > product.price && (
-            <span className="text-[11px] sm:text-xs text-muted-foreground line-through">
-              {formatCurrency(product.comparePrice)}
+        {/* Price Row + Cart Button */}
+        <div className="flex items-center justify-between gap-1">
+          <div className="flex items-baseline gap-1.5 flex-wrap min-w-0">
+            <span className="text-sm sm:text-base font-bold tracking-tight text-foreground">
+              {formatCurrency(product.price)}
             </span>
-          )}
-          {discount > 0 && (
-            <span className="text-[10px] sm:text-[11px] font-semibold text-destructive bg-destructive/10 px-1 py-0.5 rounded">
-              -{discount}%
-            </span>
-          )}
+            {product.comparePrice && product.comparePrice > product.price && (
+              <span className="text-[11px] sm:text-xs text-muted-foreground line-through">
+                {formatCurrency(product.comparePrice)}
+              </span>
+            )}
+            {discount > 0 && (
+              <span className="text-[10px] sm:text-[11px] font-semibold text-destructive bg-destructive/10 px-1 py-0.5 rounded">
+                -{discount}%
+              </span>
+            )}
+          </div>
+
+          {/* Cart icon button — Temu/Jumia style */}
+          <button
+            onClick={handleQuickAdd}
+            disabled={isLoading || isOutOfStock}
+            className={cn(
+              'shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full border flex items-center justify-center transition-colors',
+              isOutOfStock
+                ? 'border-border/40 bg-muted/50 text-muted-foreground/40 cursor-not-allowed'
+                : 'border-border/60 bg-background text-foreground/70 hover:bg-primary hover:text-primary-foreground hover:border-primary'
+            )}
+            aria-label={isOutOfStock ? 'Out of stock' : 'Add to cart'}
+          >
+            {isLoading ? (
+              <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            ) : (
+              <ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            )}
+          </button>
         </div>
 
         {/* Rating + meta line */}
