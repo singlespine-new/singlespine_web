@@ -27,7 +27,6 @@ interface ProductCardProps {
   product: Product
   className?: string
   showQuickAdd?: boolean
-  viewMode?: 'grid' | 'list'
   onClickAction?: (product: Product) => void
 }
 
@@ -220,178 +219,6 @@ interface InternalCardProps {
   isLowStock: boolean
 }
 /* -------------------------------------------------------------------------- */
-/* List Layout                                                                */
-/* -------------------------------------------------------------------------- */
-
-function ListLayout(props: InternalCardProps) {
-  const {
-    product,
-    handleCardClick,
-    handleWishlist,
-    handleQuickAdd,
-    isWishlisted,
-    isLoading,
-    showQuickAdd,
-    isOutOfStock,
-    isLowStock
-  } = props
-
-  const [imageLoading, setImageLoading] = useState(true)
-
-  const availabilityStatus = product.availability
-  const discount = calcDiscount(product.comparePrice, product.price)
-
-  return (
-    <div
-      className={cn(
-        'group relative flex flex-col sm:flex-row cursor-pointer overflow-hidden rounded-xl sm:rounded-2xl border border-border/60 bg-card/95 backdrop-blur-sm',
-        'transition-all duration-300 hover:border-primary/30 hover:shadow-lg'
-      )}
-      onClick={handleCardClick}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          handleCardClick()
-        }
-      }}
-      aria-label={`View details for ${product.name}`}
-    >
-      {/* Image */}
-      <div className="relative h-40 sm:h-48 w-full sm:w-48 md:w-56 lg:w-64 shrink-0 overflow-hidden">
-        {imageLoading && <ImageSkeleton iconSize="h-8 w-8" />}
-        <Image
-          src={product.images[0] || '/placeholder-product.jpg'}
-          alt={product.name}
-          fill
-          priority={false}
-          className={cn(
-            'object-cover transition-transform duration-500 group-hover:scale-105',
-            imageLoading ? 'opacity-0' : 'opacity-100'
-          )}
-          onLoad={() => setImageLoading(false)}
-          onError={() => setImageLoading(false)}
-          sizes="256px"
-        />
-        {/* Overlays */}
-        <div className="absolute left-3 top-3 flex flex-col gap-2">
-          {product.isFeatured && (
-            <div className="inline-flex items-center gap-1 rounded-full bg-primary/90 px-3 py-1 text-[11px] font-semibold text-primary-foreground shadow backdrop-blur">
-              <Star className="h-3 w-3" />
-              Featured
-            </div>
-          )}
-          {discount > 0 && (
-            <div className="rounded-full bg-destructive/90 px-3 py-1 text-[11px] font-semibold text-destructive-foreground shadow backdrop-blur">
-              -{discount}%
-            </div>
-          )}
-        </div>
-        {/* Wishlist */}
-        <div className="absolute right-3 top-3">
-          <WishlistButton
-            active={isWishlisted}
-            onToggle={handleWishlist}
-          />
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="flex min-w-0 flex-1 flex-col justify-between p-3 sm:p-4 md:p-6">
-        <div className="space-y-2 sm:space-y-3 md:space-y-4">
-          {/* Header */}
-          <div className="flex items-start justify-between gap-2 sm:gap-3">
-            <div className="min-w-0 flex-1 space-y-0.5 sm:space-y-1">
-
-              <h3 className="line-clamp-2 text-base sm:text-lg md:text-xl font-bold leading-tight tracking-tight text-foreground transition-colors hover:text-primary">
-                {product.name}
-              </h3>
-              <p className="line-clamp-1 sm:line-clamp-2 text-xs sm:text-sm leading-relaxed text-muted-foreground">
-                {product.shortDescription || product.description}
-              </p>
-            </div>
-            <RatingBadge
-              rating={product.rating}
-              reviewCount={product.reviewCount}
-            />
-          </div>
-
-          {/* Meta */}
-          <div className="flex flex-wrap gap-x-3 sm:gap-x-6 gap-y-1 sm:gap-y-2 text-xs sm:text-sm text-muted-foreground">
-            {product.origin && (
-              <span className="inline-flex items-center gap-1">
-                <MapPin className="h-4 w-4" />
-                {product.origin}
-              </span>
-            )}
-            <span className="inline-flex items-center gap-1">
-              <Truck className="h-4 w-4" />
-              30–45 min
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <Clock className="h-4 w-4" />
-              <span className="capitalize">
-                {product.category.replace('-', ' ')}
-              </span>
-            </span>
-          </div>
-
-          {/* Availability */}
-          <div className="flex items-center gap-2">
-            <AvailabilityBadge
-              status={availabilityStatus}
-              stock={product.stock}
-            />
-            {isLowStock && !isOutOfStock && (
-              <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
-                Only {product.stock} left
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-3 sm:mt-4 flex items-center justify-between border-t border-border/60 pt-3 sm:pt-4">
-          <div className="space-y-0.5 sm:space-y-1">
-            <PriceBlock
-              price={product.price}
-              comparePrice={product.comparePrice}
-              size="md"
-            />
-            {product.vendor && (
-              <Link
-                href={vendorSlugFromProduct(product)}
-                className="text-xs text-muted-foreground hover:text-primary"
-                onClick={(e) => e.stopPropagation()}
-              >
-                by {product.vendor}
-              </Link>
-            )}
-          </div>
-          {showQuickAdd && !isOutOfStock && (
-            <Button
-              onClick={handleQuickAdd}
-              disabled={isLoading}
-              className="h-10 rounded-xl px-5 font-semibold shadow-sm transition-all hover:shadow-md"
-            >
-              {isLoading ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/40 border-t-primary-foreground" />
-              ) : (
-                <div className="flex items-center gap-2">
-                  <ShoppingCart className="h-4 w-4" />
-                  Add
-                </div>
-              )}
-            </Button>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/* -------------------------------------------------------------------------- */
 /* Grid Layout                                                                */
 /* -------------------------------------------------------------------------- */
 
@@ -412,7 +239,6 @@ function GridLayout(props: InternalCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
   const discount = calcDiscount(product.comparePrice, product.price)
-  const availabilityStatus = product.availability
 
   const onSwitchImage = (index: number) => {
     setCurrentImageIndex(index)
@@ -421,8 +247,10 @@ function GridLayout(props: InternalCardProps) {
   return (
     <div
       className={cn(
-        'group relative cursor-pointer overflow-hidden rounded-2xl border border-border/60 bg-card/95 backdrop-blur-sm',
-        'transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl'
+        'group relative cursor-pointer overflow-hidden',
+        // Borderless at rest — shadow pops on hover (Temu/Jumia pattern)
+        'transition-all duration-200 hover:shadow-md hover:-translate-y-0.5',
+        'rounded-sm'
       )}
       onClick={handleCardClick}
       role="button"
@@ -435,9 +263,9 @@ function GridLayout(props: InternalCardProps) {
         }
       }}
     >
-      {/* Image */}
-      <div className="relative aspect-square w-full overflow-hidden bg-secondary/20">
-        {imageLoading && <ImageSkeleton iconSize="h-12 w-12" />}
+      {/* Image — fills full tile width, rounded corners on image only */}
+      <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-muted/30">
+        {imageLoading && <ImageSkeleton iconSize="h-10 w-10" />}
         {product.images.length > 0 ? (
           <Image
             src={
@@ -446,38 +274,23 @@ function GridLayout(props: InternalCardProps) {
             alt={product.name}
             fill
             className={cn(
-              'object-cover transition-transform duration-500 group-hover:scale-110',
+              'object-cover',
               imageLoading ? 'opacity-0' : 'opacity-100'
             )}
             onLoad={() => setImageLoading(false)}
             onError={() => setImageLoading(false)}
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-secondary/30">
-            <Package className="h-12 w-12 text-secondary-foreground/50" />
+          <div className="flex h-full w-full items-center justify-center bg-muted/40">
+            <Package className="h-10 w-10 text-muted-foreground/40" />
           </div>
         )}
 
-        <div className="absolute inset-0 bg-linear-to-t from-background/40 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
-        {/* Badges */}
-        <div className="absolute left-2 top-2 flex flex-col gap-1">
-          {product.isFeatured && (
-            <div className="inline-flex items-center gap-1 rounded-md bg-primary/90 px-2 py-0.5 text-[10px] font-semibold text-primary-foreground shadow backdrop-blur">
-              <Star className="h-3 w-3" />
-              Featured
-            </div>
-          )}
-          {discount > 0 && (
-            <div className="rounded-md bg-destructive/90 px-2 py-0.5 text-[10px] font-semibold text-destructive-foreground shadow backdrop-blur">
-              -{discount}%
-            </div>
-          )}
-        </div>
 
-        {/* Action top-right */}
-        <div className="absolute right-2 top-2">
+        {/* Wishlist — appears on hover */}
+        <div className="absolute right-1.5 bottom-1.5 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
           <WishlistButton
             active={isWishlisted}
             onToggle={handleWishlist}
@@ -485,30 +298,9 @@ function GridLayout(props: InternalCardProps) {
           />
         </div>
 
-        {/* Hover actions (bottom) */}
-        <div className="absolute inset-x-2 bottom-2 flex gap-1 opacity-0 translate-y-2 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-          {showQuickAdd && !isOutOfStock && (
-            <Button
-              size="sm"
-              disabled={isLoading}
-              onClick={handleQuickAdd}
-              className="flex-1 h-7 bg-primary/90 text-primary-foreground backdrop-blur-sm hover:bg-primary shadow-sm"
-            >
-              {isLoading ? (
-                <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              ) : (
-                <div className="flex items-center gap-1 text-xs font-semibold">
-                  <ShoppingCart className="h-3 w-3" />
-                  Add
-                </div>
-              )}
-            </Button>
-          )}
-        </div>
-
         {/* Image indicators */}
         {product.images.length > 1 && (
-          <div className="absolute bottom-9 left-1/2 flex -translate-x-1/2 gap-1">
+          <div className="absolute bottom-1.5 left-1/2 flex -translate-x-1/2 gap-0.5">
             {product.images.slice(0, 4).map((_, i) => {
               const active = i === currentImageIndex
               return (
@@ -519,95 +311,70 @@ function GridLayout(props: InternalCardProps) {
                     onSwitchImage(i)
                   }}
                   className={cn(
-                    'h-1.5 w-4 rounded-full transition-all',
+                    'h-1 w-3 rounded-full transition-all',
                     active
                       ? 'bg-primary shadow'
-                      : 'bg-white/60 hover:bg-white/80'
+                      : 'bg-white/50 hover:bg-white/70'
                   )}
                   aria-label={`Show image ${i + 1}`}
                   aria-current={active}
                 />
               )
             })}
-            {product.images.length > 4 && (
-              <div className="ml-1 text-[10px] text-white/80">
-                +{product.images.length - 4}
-              </div>
-            )}
           </div>
         )}
       </div>
 
-      {/* Content */}
-      <div className="space-y-1.5 sm:space-y-2 p-2.5 sm:p-3">
-        {/* Title + rating */}
-        <div className="space-y-1">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
+      {/* Content — compact, directly below image */}
+      <div className="space-y-0.5 px-0.5 pt-2 pb-1">
+        {/* Featured label — inline like Temu's "MEGA SALE" */}
+        {product.isFeatured && (
+          <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-primary">
+            <Star className="h-2.5 w-2.5 fill-primary" />
+            Featured
+          </span>
+        )}
 
-              <h3 className="line-clamp-2 text-sm font-semibold leading-tight tracking-tight text-foreground transition-colors hover:text-primary">
-                {product.name}
-              </h3>
-            </div>
-            <RatingBadge
-              rating={product.rating}
-              reviewCount={product.reviewCount}
-              compact
-            />
-          </div>
-        </div>
+        {/* Product Name */}
+        <h3 className="line-clamp-2 text-[13px] sm:text-sm font-medium leading-snug text-foreground">
+          {product.name}
+        </h3>
 
-        {/* Single meta line (origin) */}
-        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-          <div className="flex items-center gap-1 truncate">
-            <MapPin className="h-3 w-3 shrink-0" />
-            <span className="truncate">{product.origin}</span>
-          </div>
-          <AvailabilityBadge
-            status={availabilityStatus}
-            stock={product.stock}
-          />
-        </div>
-
-        {/* Price + vendor */}
-        <div className="space-y-0.5 sm:space-y-1 border-t border-border/60 pt-1.5 sm:pt-2">
-          <div className="flex items-center justify-between">
-            <PriceBlock
-              price={product.price}
-              comparePrice={product.comparePrice}
-              size="sm"
-            />
-            {product.reviewCount && (
-              <span className="text-[11px] text-muted-foreground">
-                ({product.reviewCount})
-              </span>
-            )}
-          </div>
-          {product.vendor && (
-            <p className="truncate text-[11px] text-muted-foreground">
-              by{' '}
-              <Link
-                href={vendorSlugFromProduct(product)}
-                onClick={(e) => e.stopPropagation()}
-                className="font-medium text-primary hover:underline"
-              >
-                {product.vendor}
-              </Link>
-            </p>
+        {/* Price Row */}
+        <div className="flex items-baseline gap-1.5 flex-wrap">
+          <span className="text-sm sm:text-base font-bold tracking-tight text-foreground">
+            {formatCurrency(product.price)}
+          </span>
+          {product.comparePrice && product.comparePrice > product.price && (
+            <span className="text-[11px] sm:text-xs text-muted-foreground line-through">
+              {formatCurrency(product.comparePrice)}
+            </span>
+          )}
+          {discount > 0 && (
+            <span className="text-[10px] sm:text-[11px] font-semibold text-destructive bg-destructive/10 px-1 py-0.5 rounded">
+              -{discount}%
+            </span>
           )}
         </div>
-      </div>
 
-      {/* Decorative pattern */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.025] transition-opacity duration-300 group-hover:opacity-[0.05]">
-        <div
-          className="h-full w-full"
-          style={{
-            backgroundImage:
-              "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23FC8120' fill-opacity='1'%3E%3Cpath d='M30 30c0-16.569 13.431-30 30-30v60C43.431 60 30 46.569 30 30z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
-            backgroundSize: '60px 60px'
-          }}
-        />
+        {/* Rating + meta line */}
+        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          {product.rating && (
+            <div className="flex items-center gap-0.5">
+              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+              <span className="font-medium text-foreground/80">{product.rating.toFixed(1)}</span>
+              {product.reviewCount && (
+                <span>({product.reviewCount.toLocaleString()})</span>
+              )}
+            </div>
+          )}
+          {product.rating && product.vendor && (
+            <span className="text-border">·</span>
+          )}
+          {product.vendor && (
+            <span className="truncate">{product.vendor}</span>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -623,7 +390,6 @@ export default function ProductCard({
   product,
   className,
   showQuickAdd = true,
-  viewMode = 'grid',
   onClickAction
 }: ProductCardProps) {
   const { isAuthenticated } = useAuth()
@@ -764,11 +530,7 @@ export default function ProductCard({
 
   return (
     <div className={cn(className)}>
-      {viewMode === 'list' ? (
-        <ListLayout {...internalProps} />
-      ) : (
-        <GridLayout {...internalProps} />
-      )}
+      <GridLayout {...internalProps} />
     </div>
   )
 }
