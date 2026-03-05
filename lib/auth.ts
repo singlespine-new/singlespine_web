@@ -14,24 +14,27 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
     }),
     CredentialsProvider({
-      name: 'credentials',
+      id: 'credentials',
+      name: 'Email & Password',
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
+        console.log('Credentials auth: Attempting login for', credentials?.email)
+
         if (!credentials?.email || !credentials?.password) {
-          throw new Error('Missing credentials')
+          console.error('Credentials auth: Missing email or password')
+          return null
         }
 
         const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email
-          }
+          where: { email: credentials.email }
         })
 
         if (!user || !user.password) {
-          throw new Error('Invalid credentials')
+          console.error('Credentials auth: User not found or no password set for', credentials.email)
+          return null
         }
 
         const isPasswordValid = await bcrypt.compare(
@@ -40,9 +43,11 @@ export const authOptions: NextAuthOptions = {
         )
 
         if (!isPasswordValid) {
-          throw new Error('Invalid credentials')
+          console.error('Credentials auth: Invalid password for', credentials.email)
+          return null
         }
 
+        console.log('Credentials auth: Login successful for', user.email, 'role:', user.role)
         return {
           id: user.id,
           email: user.email,
@@ -120,16 +125,27 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user, account }) {
       if (user) {
-        // Standard fields
+        // Initial sign-in: set all fields from the user object
         token.role = user.role
         token.id = user.id
         token.phoneNumber = (user as any).phoneNumber
-        // Provider (Google) image
         token.picture = (user as any).image || null
-        // Custom uploaded avatar (new field from schema)
         token.customAvatar = (user as any).customAvatarUrl || null
-
         console.log('JWT callback: Updated token for user', user.id)
+      } else if (token.id) {
+        // Subsequent requests: re-fetch role from DB so upgrades (e.g. VENDOR) are picked up
+        try {
+          const freshUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { role: true },
+          })
+          if (freshUser && freshUser.role !== token.role) {
+            console.log('JWT callback: Role changed from', token.role, 'to', freshUser.role)
+            token.role = freshUser.role
+          }
+        } catch (e) {
+          // Silently fail — keep existing token role
+        }
       }
       if (account) {
         console.log('JWT callback: Account provider', account.provider)
@@ -191,6 +207,24 @@ export async function getCurrentUser() {
 export async function isAdmin() {
   const user = await getCurrentUser()
   return user?.role === 'ADMIN'
+}
+
+// Helper function to check if user is a merchant (VENDOR or ADMIN)
+export async function isMerchant() {
+  const user = await getCurrentUser()
+  return user?.role === 'VENDOR' || user?.role === 'ADMIN'
+}
+
+// Helper to get the current merchant's shop
+export async function getMerchantShop() {
+  const user = await getCurrentUser()
+  if (!user?.id) return null
+  if (user.role !== 'VENDOR' && user.role !== 'ADMIN') return null
+
+  const shop = await prisma.shop.findFirst({
+    where: { ownerId: user.id, isActive: true }
+  })
+  return shop
 }
 
 // Types for NextAuth
