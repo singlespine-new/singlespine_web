@@ -41,12 +41,23 @@ export default withAuth(
     const token = req.nextauth.token
 
     // Protected routes that require authentication
-    const protectedRoutes = ['/checkout', '/profile', '/orders', '/admin']
+    const protectedRoutes = ['/checkout', '/profile', '/orders']
+    const adminRoutes = ['/admin']
 
     // Check if the current path is protected
     const isProtectedRoute = protectedRoutes.some(route =>
       pathname.startsWith(route)
     )
+    const isAdminRoute = adminRoutes.some(route =>
+      pathname.startsWith(route)
+    ) && !pathname.startsWith('/admin/login')
+
+    // If accessing an admin route without authentication, redirect to admin login
+    if (isAdminRoute && !token) {
+      return NextResponse.redirect(
+        new URL('/admin/login', req.url)
+      )
+    }
 
     // If accessing a protected route without authentication
     if (isProtectedRoute && !token) {
@@ -87,6 +98,7 @@ export default withAuth(
           '/shop',
           '/how-it-works',
           '/auth',
+          '/admin/login',
           '/api/auth',
           '/api/products',
           '/api/shops',

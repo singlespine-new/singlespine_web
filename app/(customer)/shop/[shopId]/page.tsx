@@ -939,7 +939,6 @@ export default function ShopPage() {
                       product={product}
                       className={viewMode === 'list' ? 'flex flex-row' : ''}
                       showQuickAdd
-                      viewMode={viewMode}
                       onClickAction={() => openProduct(product)}
                     />
                   </div>

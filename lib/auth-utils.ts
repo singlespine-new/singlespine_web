@@ -163,6 +163,46 @@ export function useIsAdmin() {
   return useHasRole('ADMIN')
 }
 
+// Check if user is a merchant (VENDOR or ADMIN)
+export function useIsMerchant() {
+  const { user } = useAuth()
+  return user?.role === 'VENDOR' || user?.role === 'ADMIN'
+}
+
+// Hook to require merchant role — redirects to registration if not a merchant
+export function useRequireMerchant() {
+  const { isAuthenticated, isLoading, user } = useAuth()
+  const router = useRouter()
+  const isMerchant = user?.role === 'VENDOR' || user?.role === 'ADMIN'
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/auth/signin?callbackUrl=/merchant')
+    } else if (!isLoading && isAuthenticated && !isMerchant) {
+      router.push('/merchant/register')
+    }
+  }, [isAuthenticated, isLoading, isMerchant, router])
+
+  return { isAuthenticated, isLoading, isMerchant }
+}
+
+// Hook to require admin role — redirects to home if not admin
+export function useRequireAdmin() {
+  const { isAuthenticated, isLoading, user } = useAuth()
+  const router = useRouter()
+  const isAdmin = user?.role === 'ADMIN'
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/admin/login')
+    } else if (!isLoading && isAuthenticated && !isAdmin) {
+      router.push('/')
+    }
+  }, [isAuthenticated, isLoading, isAdmin, router])
+
+  return { isAuthenticated, isLoading, isAdmin }
+}
+
 // Storage utilities for auth state
 export const authStorage = {
   setRedirectUrl: (url: string) => {

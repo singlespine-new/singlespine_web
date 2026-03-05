@@ -37,6 +37,7 @@ model User {
   addresses      Address[]
   wishlist       Wishlist[]
   paymentMethods PaymentMethod[]
+  shops          Shop[]
 
   @@map("users")
 }
@@ -157,6 +158,36 @@ model Wishlist {
   @@map("wishlists")
 }
 
+// Shop / Merchant model
+model Shop {
+  id          String   @id @default(uuid())
+  ownerId     String
+  name        String
+  slug        String   @unique
+  description String?
+  logo        String?
+  coverImage  String?
+  phone       String?
+  email       String?
+  address     String?
+  city        String?
+  region      String?
+  category    String?  // e.g. "grocery", "electronics", "fashion"
+  website     String?
+  isActive    Boolean  @default(true)
+  isVerified  Boolean  @default(false)
+  rating      Float    @default(0)
+  totalSales  Int      @default(0)
+  metadata    Json?    // Additional flexible fields
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner    User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@map("shops")
+}
+
 // Product model
 model Product {
   id               String              @id @default(uuid())
@@ -176,12 +207,14 @@ model Product {
   weight           Float? // Weight in kg for shipping calculations
   dimensions       Json? // {length, width, height} in cm
   origin           String              @default("Ghana") // Where the product originates from
-  vendor           String? // Local vendor/supplier
+  vendor           String? // Display name (denormalized from Shop)
+  shopId           String? // Link to Shop
   availability     ProductAvailability @default(IN_STOCK)
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
 
   // Relations
+  shop          Shop?            @relation(fields: [shopId], references: [id], onDelete: SetNull)
   cartItems     CartItem[]
   orderItems    OrderItem[]
   variants      ProductVariant[]
