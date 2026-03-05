@@ -244,7 +244,7 @@ function ListLayout(props: InternalCardProps) {
   return (
     <div
       className={cn(
-        'group relative flex cursor-pointer overflow-hidden rounded-2xl border border-border/60 bg-card/95 backdrop-blur-sm',
+        'group relative flex flex-col sm:flex-row cursor-pointer overflow-hidden rounded-xl sm:rounded-2xl border border-border/60 bg-card/95 backdrop-blur-sm',
         'transition-all duration-300 hover:border-primary/30 hover:shadow-lg'
       )}
       onClick={handleCardClick}
@@ -259,7 +259,7 @@ function ListLayout(props: InternalCardProps) {
       aria-label={`View details for ${product.name}`}
     >
       {/* Image */}
-      <div className="relative h-48 w-64 shrink-0 overflow-hidden">
+      <div className="relative h-40 sm:h-48 w-full sm:w-48 md:w-56 lg:w-64 shrink-0 overflow-hidden">
         {imageLoading && <ImageSkeleton iconSize="h-8 w-8" />}
         <Image
           src={product.images[0] || '/placeholder-product.jpg'}
@@ -298,20 +298,16 @@ function ListLayout(props: InternalCardProps) {
       </div>
 
       {/* Content */}
-      <div className="flex min-w-0 flex-1 flex-col justify-between p-6">
-        <div className="space-y-4">
+      <div className="flex min-w-0 flex-1 flex-col justify-between p-3 sm:p-4 md:p-6">
+        <div className="space-y-2 sm:space-y-3 md:space-y-4">
           {/* Header */}
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1 space-y-1">
-              <Link
-                href={`/products/${product.slug}`}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <h3 className="line-clamp-2 text-xl font-bold leading-tight tracking-tight text-foreground transition-colors hover:text-primary">
-                  {product.name}
-                </h3>
-              </Link>
-              <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+          <div className="flex items-start justify-between gap-2 sm:gap-3">
+            <div className="min-w-0 flex-1 space-y-0.5 sm:space-y-1">
+
+              <h3 className="line-clamp-2 text-base sm:text-lg md:text-xl font-bold leading-tight tracking-tight text-foreground transition-colors hover:text-primary">
+                {product.name}
+              </h3>
+              <p className="line-clamp-1 sm:line-clamp-2 text-xs sm:text-sm leading-relaxed text-muted-foreground">
                 {product.shortDescription || product.description}
               </p>
             </div>
@@ -322,7 +318,7 @@ function ListLayout(props: InternalCardProps) {
           </div>
 
           {/* Meta */}
-          <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
+          <div className="flex flex-wrap gap-x-3 sm:gap-x-6 gap-y-1 sm:gap-y-2 text-xs sm:text-sm text-muted-foreground">
             {product.origin && (
               <span className="inline-flex items-center gap-1">
                 <MapPin className="h-4 w-4" />
@@ -356,8 +352,8 @@ function ListLayout(props: InternalCardProps) {
         </div>
 
         {/* Footer */}
-        <div className="mt-4 flex items-center justify-between border-t border-border/60 pt-4">
-          <div className="space-y-1">
+        <div className="mt-3 sm:mt-4 flex items-center justify-between border-t border-border/60 pt-3 sm:pt-4">
+          <div className="space-y-0.5 sm:space-y-1">
             <PriceBlock
               price={product.price}
               comparePrice={product.comparePrice}
@@ -463,7 +459,7 @@ function GridLayout(props: InternalCardProps) {
           </div>
         )}
 
-        <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+        <div className="absolute inset-0 bg-linear-to-t from-background/40 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
         {/* Badges */}
         <div className="absolute left-2 top-2 flex flex-col gap-1">
@@ -543,19 +539,15 @@ function GridLayout(props: InternalCardProps) {
       </div>
 
       {/* Content */}
-      <div className="space-y-2 p-3">
+      <div className="space-y-1.5 sm:space-y-2 p-2.5 sm:p-3">
         {/* Title + rating */}
         <div className="space-y-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
-              <Link
-                href={`/products/${product.slug}`}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <h3 className="line-clamp-2 text-sm font-semibold leading-tight tracking-tight text-foreground transition-colors hover:text-primary">
-                  {product.name}
-                </h3>
-              </Link>
+
+              <h3 className="line-clamp-2 text-sm font-semibold leading-tight tracking-tight text-foreground transition-colors hover:text-primary">
+                {product.name}
+              </h3>
             </div>
             <RatingBadge
               rating={product.rating}
@@ -578,7 +570,7 @@ function GridLayout(props: InternalCardProps) {
         </div>
 
         {/* Price + vendor */}
-        <div className="space-y-1 border-t border-border/60 pt-2">
+        <div className="space-y-0.5 sm:space-y-1 border-t border-border/60 pt-1.5 sm:pt-2">
           <div className="flex items-center justify-between">
             <PriceBlock
               price={product.price}

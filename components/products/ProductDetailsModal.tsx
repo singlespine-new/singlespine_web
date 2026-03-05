@@ -499,13 +499,16 @@ export default function ProductDetailsModal({
       <div
         ref={dialogRef}
         className={cn(
-          'relative w-full max-w-5xl overflow-hidden rounded-2xl shadow-xl border border-border',
+          'relative w-full max-w-5xl overflow-hidden shadow-xl border border-border',
           'bg-card text-card-foreground',
-          'animate-in zoom-in-95 fade-in slide-in-from-top-4 duration-200'
+          'animate-in zoom-in-95 fade-in slide-in-from-top-4 duration-200',
+          // Full screen on mobile, rounded card on sm+
+          'rounded-none sm:rounded-2xl',
+          'max-h-[100dvh] sm:max-h-[90vh]'
         )}
       >
         {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-border/60 bg-card/95 px-5 py-4 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+        <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-border/60 bg-card/95 px-3 sm:px-5 py-3 sm:py-4 backdrop-blur supports-[backdrop-filter]:bg-card/80">
           <h2 className="text-base sm:text-lg font-semibold tracking-tight">
             Product Details
           </h2>
@@ -556,9 +559,9 @@ export default function ProductDetailsModal({
         </div>
 
         {/* Content */}
-        <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-8 p-6 overflow-y-auto max-h-[calc(100vh-5rem)]">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-4 sm:gap-6 lg:gap-8 p-3 sm:p-5 lg:p-6 overflow-y-auto max-h-[calc(100dvh-3.5rem)] sm:max-h-[calc(90vh-5rem)]">
           {/* Images */}
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-3 sm:gap-5">
             <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-muted">
               <Image
                 key={product.images[selectedImageIndex] || 'placeholder'}
@@ -611,7 +614,7 @@ export default function ProductDetailsModal({
                       onClick={() => setSelectedImageIndex(i)}
                       onKeyDown={(e) => handleThumbnailKey(e, i)}
                       className={cn(
-                        'relative aspect-square h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border transition',
+                        'relative aspect-square h-12 w-12 sm:h-16 sm:w-16 flex-shrink-0 overflow-hidden rounded-lg border transition',
                         active
                           ? 'border-primary ring-2 ring-primary/40'
                           : 'border-border hover:border-primary/60 hover:bg-muted/40'
@@ -624,7 +627,7 @@ export default function ProductDetailsModal({
                         src={img}
                         alt={`${product.name} ${i + 1}`}
                         fill
-                        sizes="64px"
+                        sizes="48px"
                         className="object-cover"
                       />
                     </button>
@@ -637,9 +640,9 @@ export default function ProductDetailsModal({
           {/* Info */}
           <div className="flex flex-col gap-6">
             <div className="space-y-3">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="space-y-1 max-w-[70%]">
-                  <h1 className="text-xl sm:text-2xl font-bold tracking-tight leading-snug">
+              <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-3">
+                <div className="space-y-1 min-w-0 flex-1">
+                  <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight leading-snug">
                     {product.name}
                   </h1>
                   {product.vendor && (

@@ -223,12 +223,12 @@ export default function ProductsPage() {
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-primary/10 via-secondary/20 to-primary/10 border-b border-border/40">
-        <div className="container mx-auto px-4 py-16">
+        <div className="container mx-auto px-4 py-8 sm:py-12 md:py-16">
           <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-2 sm:mb-4">
               Discover Authentic African Gifts
             </h1>
-            <p className="text-lg text-muted-foreground mb-8">
+            <p className="text-sm sm:text-base md:text-lg text-muted-foreground mb-4 sm:mb-6 md:mb-8 px-2">
               Handpicked treasures from across the continent, delivered with love to your family in Ghana
             </p>
 
@@ -248,29 +248,53 @@ export default function ProductsPage() {
         </div>
       </section>
 
-      <div className="container mx-auto px-4 py-8 ">
-        <div className="flex flex-col lg:flex-row gap-8 min-h-0">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8">
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8 min-h-0">
+
+          {/* Mobile Filter Overlay */}
+          {showFilters && (
+            <div
+              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
+              onClick={() => setShowFilters(false)}
+            />
+          )}
+
           {/* Filters Sidebar */}
           <div className={cn(
-            "w-full lg:w-64 lg:flex-shrink-0 space-y-6",
-            showFilters ? "block" : "hidden lg:block"
+            // Desktop: static sidebar
+            "lg:w-64 lg:flex-shrink-0 lg:block",
+            // Mobile: slide-up sheet
+            showFilters
+              ? "fixed inset-x-0 bottom-0 z-50 max-h-[75vh] overflow-y-auto rounded-t-2xl shadow-2xl lg:relative lg:inset-auto lg:z-auto lg:max-h-none lg:rounded-none lg:shadow-none"
+              : "hidden"
           )}>
-            <div className="bg-card border border-border/40 rounded-xl p-6 sticky top-20 overflow-hidden max-w-full">
+            <div className="bg-card border border-border/40 rounded-xl lg:rounded-xl rounded-b-none p-5 sm:p-6 lg:sticky lg:top-20 overflow-hidden max-w-full">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-foreground">Filters</h3>
-                {activeFiltersCount > 0 && (
+                <div className="flex items-center gap-2">
+                  {activeFiltersCount > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearFilters}
+                      className="text-primary hover:text-primary/80"
+                    >
+                      Clear ({activeFiltersCount})
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={clearFilters}
-                    className="text-primary hover:text-primary/80"
+                    onClick={() => setShowFilters(false)}
+                    className="lg:hidden h-8 w-8 p-0"
+                    aria-label="Close filters"
                   >
-                    Clear ({activeFiltersCount})
+                    <span className="text-lg">&times;</span>
                   </Button>
-                )}
+                </div>
               </div>
 
-              <div className="space-y-6 min-w-0">
+              <div className="space-y-5 sm:space-y-6 min-w-0">
                 {/* Category */}
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
@@ -279,7 +303,7 @@ export default function ProductsPage() {
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full max-w-full p-2 border border-input rounded-md bg-background text-foreground text-sm"
+                    className="w-full max-w-full p-2.5 border border-input rounded-lg bg-background text-foreground text-sm"
                   >
                     {CATEGORY_SELECT_OPTIONS.map(cat => (
                       <option key={cat.value} value={cat.value}>
@@ -297,7 +321,7 @@ export default function ProductsPage() {
                   <select
                     value={origin}
                     onChange={(e) => setOrigin(e.target.value)}
-                    className="w-full max-w-full p-2 border border-input rounded-md bg-background text-foreground text-sm"
+                    className="w-full max-w-full p-2.5 border border-input rounded-lg bg-background text-foreground text-sm"
                   >
                     {ORIGIN_OPTIONS.map(orig => (
                       <option key={orig.value} value={orig.value}>
@@ -318,16 +342,14 @@ export default function ProductsPage() {
                       placeholder="Min"
                       value={minPrice}
                       onChange={(e) => setMinPrice(e.target.value)}
-                      className="w-full min-w-0 p-2 border border-input rounded-md bg-background text-foreground text-sm"
-                      style={{ maxWidth: '100%' }}
+                      className="w-full min-w-0 p-2.5 border border-input rounded-lg bg-background text-foreground text-sm"
                     />
                     <input
                       type="number"
                       placeholder="Max"
                       value={maxPrice}
                       onChange={(e) => setMaxPrice(e.target.value)}
-                      className="w-full min-w-0 p-2 border border-input rounded-md bg-background text-foreground text-sm"
-                      style={{ maxWidth: '100%' }}
+                      className="w-full min-w-0 p-2.5 border border-input rounded-lg bg-background text-foreground text-sm"
                     />
                   </div>
                 </div>
@@ -353,6 +375,14 @@ export default function ProductsPage() {
                     <span className="text-sm text-foreground">In Stock Only</span>
                   </label>
                 </div>
+
+                {/* Mobile Apply Button */}
+                <Button
+                  className="w-full lg:hidden"
+                  onClick={() => setShowFilters(false)}
+                >
+                  Apply Filters
+                </Button>
               </div>
             </div>
           </div>
@@ -360,34 +390,34 @@ export default function ProductsPage() {
           {/* Main Content */}
           <div className="flex-1 min-w-0">
             {/* Toolbar */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-wrap justify-between items-center gap-3 mb-4 sm:mb-6">
+              <div className="flex items-center gap-2 sm:gap-4">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowFilters(!showFilters)}
-                  className="lg:hidden"
+                  className="lg:hidden h-9"
                 >
-                  <Filter className="w-4 h-4 mr-2" />
-                  Filters
+                  <Filter className="w-4 h-4 mr-1.5" />
+                  <span className="hidden xs:inline">Filters</span>
                   {activeFiltersCount > 0 && (
-                    <span className="ml-2 bg-primary text-white text-xs rounded-full px-2 py-1">
+                    <span className="ml-1.5 bg-primary text-white text-[10px] rounded-full w-5 h-5 inline-flex items-center justify-center">
                       {activeFiltersCount}
                     </span>
                   )}
                 </Button>
 
-                <div className="text-sm text-muted-foreground">
-                  {loading ? 'Loading...' : `${totalCount} products found`}
+                <div className="text-xs sm:text-sm text-muted-foreground">
+                  {loading ? 'Loading...' : `${totalCount} products`}
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 sm:gap-4">
                 {/* Sort */}
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="p-2 border border-input rounded-md bg-background text-foreground text-sm min-w-0 max-w-full"
+                  className="p-1.5 sm:p-2 border border-input rounded-lg bg-background text-foreground text-xs sm:text-sm min-w-0 max-w-[140px] sm:max-w-full"
                 >
                   {SORT_OPTIONS.map(option => (
                     <option key={option.value} value={option.value}>
@@ -397,12 +427,12 @@ export default function ProductsPage() {
                 </select>
 
                 {/* View Mode */}
-                <div className="flex border border-input rounded-md overflow-hidden">
+                <div className="hidden sm:flex border border-input rounded-lg overflow-hidden">
                   <button
                     onClick={() => setViewMode('grid')}
                     className={cn(
-                      "p-2 text-sm",
-                      viewMode === 'grid' ? "bg-primary text-white" : "bg-background text-foreground"
+                      "p-2 text-sm transition-colors",
+                      viewMode === 'grid' ? "bg-primary text-white" : "bg-background text-foreground hover:bg-muted"
                     )}
                   >
                     <Grid className="w-4 h-4" />
@@ -410,8 +440,8 @@ export default function ProductsPage() {
                   <button
                     onClick={() => setViewMode('list')}
                     className={cn(
-                      "p-2 text-sm",
-                      viewMode === 'list' ? "bg-primary text-white" : "bg-background text-foreground"
+                      "p-2 text-sm transition-colors",
+                      viewMode === 'list' ? "bg-primary text-white" : "bg-background text-foreground hover:bg-muted"
                     )}
                   >
                     <List className="w-4 h-4" />
@@ -422,10 +452,10 @@ export default function ProductsPage() {
 
             {/* Products Grid */}
             {loading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-3 md:gap-4">
-                {[...Array(20)].map((_, i) => (
-                  <div key={i} className="bg-card border border-border/40 rounded-lg p-3 animate-pulse">
-                    <div className="aspect-square bg-muted rounded-md mb-3" />
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4">
+                {[...Array(12)].map((_, i) => (
+                  <div key={i} className="bg-card border border-border/40 rounded-xl p-2.5 sm:p-3 animate-pulse">
+                    <div className="aspect-square bg-muted rounded-lg mb-2.5 sm:mb-3" />
                     <div className="h-3 bg-muted rounded mb-2" />
                     <div className="h-3 bg-muted rounded w-2/3 mb-2" />
                     <div className="h-4 bg-muted rounded w-1/2" />
@@ -460,8 +490,8 @@ export default function ProductsPage() {
               <div className={cn(
                 "w-full max-w-full overflow-hidden",
                 viewMode === 'grid'
-                  ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-3 md:gap-4"
-                  : "space-y-4"
+                  ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4"
+                  : "space-y-3 sm:space-y-4"
               )}>
                 {products.map((product) => (
                   <div
@@ -485,31 +515,54 @@ export default function ProductsPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex justify-center items-center space-x-2 mt-12">
+              <div className="flex justify-center items-center gap-1.5 sm:gap-2 mt-8 sm:mt-12 flex-wrap">
                 <Button
                   variant="outline"
+                  size="sm"
                   disabled={currentPage === 1}
                   onClick={() => handlePageChange(currentPage - 1)}
+                  className="h-9 px-3 text-xs sm:text-sm"
                 >
-                  Previous
+                  Prev
                 </Button>
 
-                {[...Array(totalPages)].map((_, i) => (
-                  <Button
-                    key={i}
-                    variant={currentPage === i + 1 ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handlePageChange(i + 1)}
-                    className="w-10 h-10"
-                  >
-                    {i + 1}
-                  </Button>
-                ))}
+                {(() => {
+                  // Smart pagination: show limited page buttons on mobile
+                  const pages: (number | 'ellipsis')[] = []
+                  if (totalPages <= 5) {
+                    for (let i = 1; i <= totalPages; i++) pages.push(i)
+                  } else {
+                    pages.push(1)
+                    if (currentPage > 3) pages.push('ellipsis')
+                    for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+                      pages.push(i)
+                    }
+                    if (currentPage < totalPages - 2) pages.push('ellipsis')
+                    pages.push(totalPages)
+                  }
+                  return pages.map((p, idx) =>
+                    p === 'ellipsis' ? (
+                      <span key={`ellipsis-${idx}`} className="px-1 text-muted-foreground text-sm">...</span>
+                    ) : (
+                      <Button
+                        key={p}
+                        variant={currentPage === p ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(p)}
+                        className="w-9 h-9 text-xs sm:text-sm"
+                      >
+                        {p}
+                      </Button>
+                    )
+                  )
+                })()}
 
                 <Button
                   variant="outline"
+                  size="sm"
                   disabled={currentPage === totalPages}
                   onClick={() => handlePageChange(currentPage + 1)}
+                  className="h-9 px-3 text-xs sm:text-sm"
                 >
                   Next
                 </Button>

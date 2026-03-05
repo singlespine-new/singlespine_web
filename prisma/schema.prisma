@@ -9,13 +9,14 @@ generator client {
 }
 
 datasource db {
-  provider = "mongodb"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // User model for authentication
 model User {
-  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  id              String    @id @default(uuid())
   name            String?
   email           String?   @unique
   emailVerified   DateTime?
@@ -41,8 +42,8 @@ model User {
 }
 
 model Account {
-  id                String  @id @default(auto()) @map("_id") @db.ObjectId
-  userId            String  @db.ObjectId
+  id                String  @id @default(uuid())
+  userId            String
   type              String
   provider          String
   providerAccountId String
@@ -61,9 +62,9 @@ model Account {
 }
 
 model Session {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  id           String   @id @default(uuid())
   sessionToken String   @unique
-  userId       String   @db.ObjectId
+  userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -71,7 +72,7 @@ model Session {
 }
 
 model VerificationToken {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  id         String   @id @default(uuid())
   identifier String
   token      String   @unique
   expires    DateTime
@@ -82,8 +83,8 @@ model VerificationToken {
 
 // Address model for delivery
 model Address {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId        String   @db.ObjectId
+  id            String   @id @default(uuid())
+  userId        String
   name          String
   phone         String
   streetAddress String
@@ -104,8 +105,8 @@ model Address {
 
 // Payment Method model
 model PaymentMethod {
-  id            String            @id @default(auto()) @map("_id") @db.ObjectId
-  userId        String            @db.ObjectId
+  id            String            @id @default(uuid())
+  userId        String
   type          PaymentMethodType
   provider      String? // stripe, paystack, momo, etc.
 
@@ -141,10 +142,10 @@ model PaymentMethod {
 
 // Wishlist model
 model Wishlist {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String   @db.ObjectId
-  productId String   @db.ObjectId
-  variantId String?  @db.ObjectId
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  variantId String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -158,7 +159,7 @@ model Wishlist {
 
 // Product model
 model Product {
-  id               String              @id @default(auto()) @map("_id") @db.ObjectId
+  id               String              @id @default(uuid())
   name             String
   slug             String              @unique
   description      String
@@ -181,9 +182,9 @@ model Product {
   updatedAt        DateTime            @updatedAt
 
   // Relations
-  cartItems    CartItem[]
-  orderItems   OrderItem[]
-  variants     ProductVariant[]
+  cartItems     CartItem[]
+  orderItems    OrderItem[]
+  variants      ProductVariant[]
   wishlistItems Wishlist[]
 
   @@map("products")
@@ -191,8 +192,8 @@ model Product {
 
 // Product variants (size, color, etc.)
 model ProductVariant {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  productId String   @db.ObjectId
+  id        String   @id @default(uuid())
+  productId String
   name      String // e.g., "Size", "Color"
   value     String // e.g., "Large", "Red"
   price     Float? // Additional price for this variant
@@ -202,9 +203,9 @@ model ProductVariant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  product    Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
-  cartItems  CartItem[]
-  orderItems OrderItem[]
+  product       Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cartItems     CartItem[]
+  orderItems    OrderItem[]
   wishlistItems Wishlist[]
 
   @@map("product_variants")
@@ -212,10 +213,10 @@ model ProductVariant {
 
 // Cart model
 model CartItem {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String   @db.ObjectId
-  productId String   @db.ObjectId
-  variantId String?  @db.ObjectId
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  variantId String?
   quantity  Int      @default(1)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -229,10 +230,10 @@ model CartItem {
 
 // Order model
 model Order {
-  id                    String        @id @default(auto()) @map("_id") @db.ObjectId
+  id                    String        @id @default(uuid())
   orderNumber           String        @unique
-  userId                String        @db.ObjectId
-  addressId             String        @db.ObjectId
+  userId                String
+  addressId             String
   status                OrderStatus   @default(PENDING)
   paymentStatus         PaymentStatus @default(PENDING)
   paymentMethod         String?
@@ -258,10 +259,10 @@ model Order {
 
 // Order items
 model OrderItem {
-  id        String  @id @default(auto()) @map("_id") @db.ObjectId
-  orderId   String  @db.ObjectId
-  productId String  @db.ObjectId
-  variantId String? @db.ObjectId
+  id        String  @id @default(uuid())
+  orderId   String
+  productId String
+  variantId String?
   quantity  Int
   price     Float // Price at time of order
   total     Float // quantity * price
@@ -275,8 +276,8 @@ model OrderItem {
 
 // Payment model
 model Payment {
-  id                    String        @id @default(auto()) @map("_id") @db.ObjectId
-  orderId               String        @db.ObjectId
+  id                    String        @id @default(uuid())
+  orderId               String
   amount                Float
   currency              String        @default("GHS")
   status                PaymentStatus @default(PENDING)
