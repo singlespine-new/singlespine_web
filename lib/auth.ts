@@ -143,10 +143,17 @@ export const authOptions: NextAuthOptions = {
           })
 
           if (!freshUser) {
-            // User no longer exists in this database — invalidate the token entirely
-            // so NextAuth will destroy the session on the next request.
-            console.warn('JWT callback: User ID not found in DB, invalidating session:', token.id)
-            return null as any
+            // User no longer exists in this database (e.g. stale MongoDB JWT hitting
+            // a fresh PostgreSQL DB). Strip all identity fields from the token so the
+            // session callback produces an anonymous session and all auth guards fail.
+            // NextAuth v4 requires the jwt callback to always return an object — null throws.
+            console.warn('JWT callback: stale user ID not found in DB, stripping token:', token.id)
+            return {
+              iat: token.iat,
+              exp: token.exp,
+              jti: token.jti,
+              error: 'UserNotFound',
+            }
           }
 
           if (freshUser.role !== token.role) {
@@ -164,6 +171,15 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (token) {
+        // Stale token (user deleted / DB swapped) — return a session with no identity
+        // so all auth guards treat the request as unauthenticated.
+        // The client should call signOut() when it receives error === 'UserNotFound'.
+        if ((token as any).error === 'UserNotFound') {
+          console.warn('Session callback: stale token detected, returning empty session')
+            ; (session as any).error = 'UserNotFound'
+          return session
+        }
+
         // Base identity
         session.user.id = (token as any).id || token.sub!
         session.user.role = (token as any).role as string
@@ -253,6 +269,10 @@ declare module 'next-auth' {
       role?: string
       phoneNumber?: string
     }
+    /** Set to 'UserNotFound' when the JWT references a user ID that no longer
+     *  exists in the database (e.g. stale cookie from a previous DB). The client
+     *  should call signOut() immediately when it detects this value. */
+    error?: 'UserNotFound'
   }
 }
 
