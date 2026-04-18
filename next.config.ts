@@ -1,10 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  eslint: {
-    // ESLint runs separately in CI — skip during production builds
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     // Type-check runs separately — don't block the production build
     ignoreBuildErrors: true,
