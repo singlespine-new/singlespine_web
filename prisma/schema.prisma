@@ -1,43 +1,32 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
-// User model for authentication
 model User {
-  id              String    @id @default(uuid())
+  id              String          @id @default(uuid())
   name            String?
-  email           String?   @unique
+  email           String?         @unique
   emailVerified   DateTime?
   image           String?
-  customAvatarUrl String?   // user-uploaded avatar override (fallback to provider image if null)
+  customAvatarUrl String?
   password        String?
-  phoneNumber     String?   @unique
+  phoneNumber     String?         @unique
   phoneVerified   DateTime?
-  role            UserRole  @default(USER)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  // Relations
-  accounts       Account[]
-  sessions       Session[]
-  orders         Order[]
-  cart           CartItem[]
-  addresses      Address[]
-  wishlist       Wishlist[]
-  paymentMethods PaymentMethod[]
-  shops          Shop[]
+  role            UserRole        @default(USER)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  accounts        Account[]
+  addresses       Address[]
+  cart            CartItem[]
+  orders          Order[]
+  paymentMethods  PaymentMethod[]
+  sessions        Session[]
+  shops           Shop[]
+  wishlist        Wishlist[]
 
   @@map("users")
 }
@@ -55,8 +44,7 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@map("accounts")
@@ -82,7 +70,6 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
-// Address model for delivery
 model Address {
   id            String   @id @default(uuid())
   userId        String
@@ -92,78 +79,64 @@ model Address {
   city          String
   region        String
   country       String   @default("Ghana")
-  ghanaPostGPS  String? // Ghana Post GPS address
+  ghanaPostGPS  String?
   landmark      String?
   isDefault     Boolean  @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orders Order[]
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders        Order[]
 
   @@map("addresses")
 }
 
-// Payment Method model
 model PaymentMethod {
-  id            String            @id @default(uuid())
-  userId        String
-  type          PaymentMethodType
-  provider      String? // stripe, paystack, momo, etc.
-
-  // Card details (encrypted/tokenized)
-  cardLast4       String?
-  cardBrand       String?
-  cardExpiryMonth Int?
-  cardExpiryYear  Int?
-
-  // Mobile Money details
-  momoProvider String? // MTN, Vodafone, AirtelTigo
-  momoNumber   String?
-
-  // Bank Transfer details
+  id                String            @id @default(uuid())
+  userId            String
+  type              PaymentMethodType
+  provider          String?
+  cardLast4         String?
+  cardBrand         String?
+  cardExpiryMonth   Int?
+  cardExpiryYear    Int?
+  momoProvider      String?
+  momoNumber        String?
   bankName          String?
   accountNumber     String?
   accountHolderName String?
-
-  // Metadata
-  displayName String // e.g., "Visa ending in 1234", "MTN Mobile Money"
-  nickname    String?
-  isDefault   Boolean  @default(false)
-  isActive    Boolean  @default(true)
-  expiresAt   DateTime? // For cards
-  metadata    Json? // Additional metadata
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName       String
+  nickname          String?
+  isDefault         Boolean           @default(false)
+  isActive          Boolean           @default(true)
+  expiresAt         DateTime?
+  metadata          Json?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("payment_methods")
 }
 
-// Wishlist model
 model Wishlist {
-  id        String   @id @default(uuid())
+  id        String          @id @default(uuid())
   userId    String
   productId String
   variantId String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
-  variant ProductVariant? @relation(fields: [variantId], references: [id])
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  variant   ProductVariant? @relation(fields: [variantId], references: [id])
 
   @@unique([userId, productId, variantId])
   @@map("wishlists")
 }
 
-// Shop / Merchant model
 model Shop {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   ownerId     String
   name        String
-  slug        String   @unique
+  slug        String    @unique
   description String?
   logo        String?
   coverImage  String?
@@ -172,23 +145,21 @@ model Shop {
   address     String?
   city        String?
   region      String?
-  category    String?  // e.g. "grocery", "electronics", "fashion"
+  category    String?
   website     String?
-  isActive    Boolean  @default(true)
-  isVerified  Boolean  @default(false)
-  rating      Float    @default(0)
-  totalSales  Int      @default(0)
-  metadata    Json?    // Additional flexible fields
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  owner    User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  products Product[]
+  isActive    Boolean   @default(true)
+  isVerified  Boolean   @default(false)
+  rating      Float     @default(0)
+  totalSales  Int       @default(0)
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+  owner       User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   @@map("shops")
 }
 
-// Product model
 model Product {
   id               String              @id @default(uuid())
   name             String
@@ -204,64 +175,57 @@ model Product {
   isActive         Boolean             @default(true)
   isFeatured       Boolean             @default(false)
   stock            Int                 @default(0)
-  weight           Float? // Weight in kg for shipping calculations
-  dimensions       Json? // {length, width, height} in cm
-  origin           String              @default("Ghana") // Where the product originates from
-  vendor           String? // Display name (denormalized from Shop)
-  shopId           String? // Link to Shop
+  weight           Float?
+  dimensions       Json?
+  origin           String              @default("Ghana")
+  vendor           String?
   availability     ProductAvailability @default(IN_STOCK)
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
-
-  // Relations
-  shop          Shop?            @relation(fields: [shopId], references: [id], onDelete: SetNull)
-  cartItems     CartItem[]
-  orderItems    OrderItem[]
-  variants      ProductVariant[]
-  wishlistItems Wishlist[]
+  shopId           String?
+  cartItems        CartItem[]
+  orderItems       OrderItem[]
+  variants         ProductVariant[]
+  shop             Shop?               @relation(fields: [shopId], references: [id])
+  wishlistItems    Wishlist[]
 
   @@map("products")
 }
 
-// Product variants (size, color, etc.)
 model ProductVariant {
-  id        String   @id @default(uuid())
-  productId String
-  name      String // e.g., "Size", "Color"
-  value     String // e.g., "Large", "Red"
-  price     Float? // Additional price for this variant
-  stock     Int      @default(0)
-  sku       String?  @unique
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  product       Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id            String      @id @default(uuid())
+  productId     String
+  name          String
+  value         String
+  price         Float?
+  stock         Int         @default(0)
+  sku           String?     @unique
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
   cartItems     CartItem[]
   orderItems    OrderItem[]
+  product       Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
   wishlistItems Wishlist[]
 
   @@map("product_variants")
 }
 
-// Cart model
 model CartItem {
-  id        String   @id @default(uuid())
+  id        String          @id @default(uuid())
   userId    String
   productId String
   variantId String?
-  quantity  Int      @default(1)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
-  variant ProductVariant? @relation(fields: [variantId], references: [id])
+  quantity  Int             @default(1)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  variant   ProductVariant? @relation(fields: [variantId], references: [id])
 
   @@map("cart_items")
 }
 
-// Order model
 model Order {
   id                    String        @id @default(uuid())
   orderNumber           String        @unique
@@ -281,52 +245,46 @@ model Order {
   trackingNumber        String?
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
-
-  user     User        @relation(fields: [userId], references: [id])
-  address  Address     @relation(fields: [addressId], references: [id])
-  items    OrderItem[]
-  payments Payment[]
+  items                 OrderItem[]
+  address               Address       @relation(fields: [addressId], references: [id])
+  user                  User          @relation(fields: [userId], references: [id])
+  payments              Payment[]
 
   @@map("orders")
 }
 
-// Order items
 model OrderItem {
-  id        String  @id @default(uuid())
+  id        String          @id @default(uuid())
   orderId   String
   productId String
   variantId String?
   quantity  Int
-  price     Float // Price at time of order
-  total     Float // quantity * price
-
-  order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product         @relation(fields: [productId], references: [id])
-  variant ProductVariant? @relation(fields: [variantId], references: [id])
+  price     Float
+  total     Float
+  order     Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product         @relation(fields: [productId], references: [id])
+  variant   ProductVariant? @relation(fields: [variantId], references: [id])
 
   @@map("order_items")
 }
 
-// Payment model
 model Payment {
   id                    String        @id @default(uuid())
   orderId               String
   amount                Float
   currency              String        @default("GHS")
   status                PaymentStatus @default(PENDING)
-  method                String // stripe, momo, cash
+  method                String
   stripePaymentIntentId String?
   momoTransactionId     String?
   metadata              Json?
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
-
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order                 Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@map("payments")
 }
 
-// Enums
 enum UserRole {
   USER
   ADMIN
