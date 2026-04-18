@@ -133,18 +133,28 @@ export const authOptions: NextAuthOptions = {
         token.customAvatar = (user as any).customAvatarUrl || null
         console.log('JWT callback: Updated token for user', user.id)
       } else if (token.id) {
-        // Subsequent requests: re-fetch role from DB so upgrades (e.g. VENDOR) are picked up
+        // Subsequent requests: re-fetch role from DB so upgrades (e.g. VENDOR) are picked up.
+        // Also validates the user ID still exists — catches stale JWTs from old databases
+        // (e.g. MongoDB ObjectIds that have no match in the current PostgreSQL users table).
         try {
           const freshUser = await prisma.user.findUnique({
             where: { id: token.id as string },
-            select: { role: true },
+            select: { role: true, id: true },
           })
-          if (freshUser && freshUser.role !== token.role) {
+
+          if (!freshUser) {
+            // User no longer exists in this database — invalidate the token entirely
+            // so NextAuth will destroy the session on the next request.
+            console.warn('JWT callback: User ID not found in DB, invalidating session:', token.id)
+            return null as any
+          }
+
+          if (freshUser.role !== token.role) {
             console.log('JWT callback: Role changed from', token.role, 'to', freshUser.role)
             token.role = freshUser.role
           }
         } catch (e) {
-          // Silently fail — keep existing token role
+          // Silently fail — keep existing token role on transient DB errors
         }
       }
       if (account) {
