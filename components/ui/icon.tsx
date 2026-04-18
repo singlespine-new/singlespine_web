@@ -1,4 +1,6 @@
 import * as React from 'react'
+import { siFacebook, siInstagram, siX } from 'simple-icons'
+import { BrandIcon } from '@/components/ui/brand-icon'
 import {
   // Status / feedback
   CheckCircle2,
@@ -64,9 +66,6 @@ import {
   // Newly added for global replacement
   ChevronRight,
   ChevronLeft,
-  Facebook,
-  Instagram,
-  Twitter,
   Smartphone,
   Building,
   Building2,
@@ -74,6 +73,31 @@ import {
   Grid,
   List
 } from 'lucide-react'
+
+// ─── Brand icons (sourced from simple-icons — official brand SVG paths) ──────
+// BrandIcon wraps any SimpleIcon object into an accessible, sized SVG element.
+
+const Facebook = React.forwardRef<SVGSVGElement, React.SVGProps<SVGSVGElement>>(
+  ({ width = 24, height = 24, ...props }, ref) => (
+    <BrandIcon ref={ref} icon={siFacebook} size={Number(width)} {...props} />
+  )
+)
+Facebook.displayName = 'Facebook'
+
+const Instagram = React.forwardRef<SVGSVGElement, React.SVGProps<SVGSVGElement>>(
+  ({ width = 24, height = 24, ...props }, ref) => (
+    <BrandIcon ref={ref} icon={siInstagram} size={Number(width)} {...props} />
+  )
+)
+Instagram.displayName = 'Instagram'
+
+// X (formerly Twitter)
+const Twitter = React.forwardRef<SVGSVGElement, React.SVGProps<SVGSVGElement>>(
+  ({ width = 24, height = 24, ...props }, ref) => (
+    <BrandIcon ref={ref} icon={siX} size={Number(width)} {...props} />
+  )
+)
+Twitter.displayName = 'Twitter'
 
 /**
  * Centralized icon registry and unified <UIIcon /> component.
